@@ -10,5 +10,6 @@ The following subpackages are included in this repository:
 
 
 Notes to self - next steps:
-* Create data subpackage: load Kuzmin data, big bang sequence generation using HMM
+* Data subpackage: standardize data output API, including Sequences
+* Model subpackage: create custom model wrapper with API for sequence data
 * Write a simple pipeline - consider merging old pipelines code

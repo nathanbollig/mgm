@@ -4,8 +4,19 @@ Shared utilities for the mgm package.
 
 @author: NBOLLIG
 """
+import os
 import numpy as np
 from tensorflow.keras.utils import to_categorical
+
+MAIN_DIRECTORY = os.path.dirname(os.path.dirname(__file__))
+
+def get_full_path(*path):
+    """
+    Used to get absolute file path to any file in the package. For example,
+    include line "from mgm.common.utils import get_full_path" in a file and then get_full_path("data", "kuzmin.fasta")
+    returns absolute file path to mgm/data/kuzmin.fasta.
+    """
+    return os.path.join(MAIN_DIRECTORY, *path)
 
 def decode_from_one_hot(x, n_positions=60, n_characters=20):
     """
