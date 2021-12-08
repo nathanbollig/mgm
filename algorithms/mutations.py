@@ -79,7 +79,9 @@ def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weig
     i = 1
 
     while i < len(seq) and (int(y) == pred or conf < confidence_threshold):
-        print('.', end='', flush=True) # one dot per character flip
+        if verbose==True:
+            print('.', end='', flush=True) # one dot per character flip
+
         time_start = datetime.datetime.now()
 
         # Execute one flip
@@ -110,8 +112,9 @@ def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weig
         # Iterate
         data.append(one_flip_data)
         i += 1
-    
-    print('')
+
+    if verbose == True:
+        print('')
 
     return seq, data
 

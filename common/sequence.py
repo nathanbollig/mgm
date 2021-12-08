@@ -46,6 +46,10 @@ class Sequence:
         if isinstance(x, np.ndarray) and len(x.shape) == 1:
             x = x.tolist()
 
+        # CASE: x is a list of non-integers => convert to list of ints
+        if type(x) == list and type(x[0]) != int:
+            x = [int(i) for i in x]
+
         # CASE: x is a integer-encoded list
         if type(x) == list and type(x[0]) == int:
             # Store as integer-encoded sequence
