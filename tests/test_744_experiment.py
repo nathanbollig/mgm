@@ -21,7 +21,7 @@ model_file_name = get_full_path("tests", "sample_data", "model.tf")
 aa_vocab_file_name = get_full_path("tests", "sample_data", "aa_vocab.pkl")
 data_file_name = get_full_path("tests", "sample_data", "data_test.txt")
 
-def test_744_experiment:
+def test_744_experiment():
     # Load model
     model = keras.models.load_model(model_file_name)
 
