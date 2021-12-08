@@ -21,7 +21,7 @@ model_file_name = get_full_path("tests", "sample_data", "model.tf")
 aa_vocab_file_name = get_full_path("tests", "sample_data", "aa_vocab.pkl")
 data_file_name = get_full_path("tests", "sample_data", "data_test.txt")
 
-if __name__ == "__main__":
+def test_744_experiment:
     # Load model
     model = keras.models.load_model(model_file_name)
 
@@ -76,3 +76,6 @@ if __name__ == "__main__":
     end_time = datetime.datetime.now()
     time_s = (end_time - start_time).total_seconds()
     print("Total time (sec): %.3f" % (time_s,))
+
+if __name__ == "__main__":
+    test_744_experiment()
