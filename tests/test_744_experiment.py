@@ -75,7 +75,11 @@ def test_744_experiment():
     # record end time
     end_time = datetime.datetime.now()
     time_s = (end_time - start_time).total_seconds()
-    print("Total time (sec): %.3f" % (time_s,))
+    time_output_str = "Total time (sec): %.3f" % (time_s,)
+
+    # write time output to file
+    with open("time_output.txt", "w") as text_file:
+        text_file.write(time_output_str)
 
 if __name__ == "__main__":
     test_744_experiment()
