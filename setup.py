@@ -23,14 +23,13 @@ VERSION = '0.1.0'
 # What packages are required for this module to be executed?
 REQUIRED = [
     'tensorflow',
+    'numpy',
     'scikit-learn',
     'scipy',
     'biopython',
-    'keras',
     'h5py',
     'matplotlib',
     'pandas',
-    'numpy',
     'hmmlearn'
 ]
 
