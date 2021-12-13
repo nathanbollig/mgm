@@ -19,7 +19,7 @@ import pandas as pd
 from mgm.common.utils import get_full_path
 model_file_name = get_full_path("tests", "sample_data", "model.tf")
 aa_vocab_file_name = get_full_path("tests", "sample_data", "aa_vocab.pkl")
-data_file_name = get_full_path("tests", "sample_data", "data_test.txt")
+data_file_name = get_full_path("tests", "sample_data", "data_test_short.txt")
 
 def test_744_experiment():
     # Load model

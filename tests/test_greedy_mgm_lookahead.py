@@ -13,7 +13,7 @@ import pandas as pd
 import numpy as np
 
 
-if __name__ == "__main__":
+def test_greedy_mgm_lookahead():
     # Load model
     model = keras.models.load_model('sample_data/model.tf')
 
@@ -54,5 +54,7 @@ if __name__ == "__main__":
     assert(data[2]['change_number'] == 3)
     assert(data[2]['time_sec'] < 0.3)
 
-
     print("Passed!")
+
+if __name__ == "__main__":
+    test_greedy_mgm_lookahead()
