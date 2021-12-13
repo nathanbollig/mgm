@@ -108,6 +108,7 @@ def big_bang(num_instances=5000, p=0.5, class_signal=10, n_epochs=10, model_type
         X: list [X_train, X_val, X_test]
         y: list [y_train, y_val, y_test]
         gen: generator object
+        aa_vocab
     """
     # Generate data
     gen = HMMGenerator(p = p, class_signal = class_signal)

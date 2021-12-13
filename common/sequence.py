@@ -22,6 +22,7 @@ class Sequence:
         """
 
         # Class fields set by the constructor
+        self.x = x
         self.y = y
         self.n_positions = n_positions
         self.n_characters = n_characters
@@ -100,3 +101,16 @@ class Sequence:
 
     def __len__(self):
         return self.n_positions
+
+    def copy(self):
+        x = self.x.copy()
+        aa_vocab, generator = None, None
+
+        if self.aa_vocab != None:
+            aa_vocab = self.aa_vocab.copy()
+        if self.generator != None:
+            generator= self.generator.copy()
+
+        new = Sequence(x=x, y=self.y, aa_vocab=aa_vocab, n_positions=self.n_positions, n_characters=self.n_characters, generator=generator)
+        return new
+

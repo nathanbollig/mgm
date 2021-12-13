@@ -39,7 +39,8 @@ def test_greedy_mgm_lookahead():
     seq = Sequence(x, y[i], aa_vocab)
 
     # Apply lookahead using the greedy mgm wrapper
-    x_new, data = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="lookahead_1", verbose=True)
+    hx = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="lookahead_1", verbose=True)
+    data = hx.substitution_data
 
     # Tests on data
     pd.DataFrame(data)

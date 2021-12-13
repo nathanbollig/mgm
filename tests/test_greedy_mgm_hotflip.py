@@ -39,7 +39,8 @@ def test_greedy_mgm_hotflip():
     seq = Sequence(x, y[i], aa_vocab)
 
     # Apply hotflip using the greedy mgm wrapper
-    x_new, data = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=True)
+    hx = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=True)
+    data = hx.substitution_data
 
     # Tests on data
     pd.DataFrame(data)
@@ -53,6 +54,7 @@ def test_greedy_mgm_hotflip():
     assert(data[2]['new_char_idx'] == 10)
     assert(data[2]['change_number'] == 3)
     assert(data[2]['time_sec'] < 0.1)
+
 
     print("Passed!")
 

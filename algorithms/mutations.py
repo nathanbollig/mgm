@@ -8,8 +8,7 @@ Functions to perform model-guided mutation to a sequence. The They will have the
         aa_vocab - a list of amino acid characters in the indexed ordering (required if seq is a list of indices)
         model - a TensorFlow Model object
     output:
-        a list of indices
-        data - list of one dictionary per character flip
+        a History object
 
 The aa_vocab may look like:
 aa_vocab = ['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
@@ -17,6 +16,7 @@ aa_vocab = ['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F'
 @author: NBOLLIG
 """
 import mgm
+from mgm.analysis.history import Variant
 from mgm.common.utils import decode_from_one_hot, encode_as_one_hot
 from mgm.common.sequence import Sequence
 from mgm.algorithms.hotflip import one_hotflip
@@ -50,7 +50,8 @@ def derive_gradient_funct(model):
 def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False):
     """
     Greedily iterate substitution mutations until the predicted class label flips and the
-    resulting prediction has confidence >= confidence_threshold.
+    resulting prediction has confidence >= confidence_threshold. Apply to one sequence object.
+    Get one sequence and hx object in output.
 
     input:
         seq - Sequence object
@@ -75,6 +76,7 @@ def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weig
     pred = y
     conf = 0
     data = []
+    init_seq = seq.copy()
     init_pred_proba = model.predict(seq.to_predict()).item()
     i = 1
 
@@ -103,7 +105,6 @@ def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weig
         # Store values in flip data dictionary
         one_flip_data['pred_proba'] = pred_proba
         one_flip_data['conf'] = conf
-        one_flip_data['init_pred_proba'] = init_pred_proba
         one_flip_data['change_number'] = i
         one_flip_data['time_sec'] = (datetime.datetime.now() - time_start).total_seconds()
         if seq.generator != None:
@@ -113,10 +114,19 @@ def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weig
         data.append(one_flip_data)
         i += 1
 
+    # Create history object
+    hx = Variant()
+    hx.set_mgm_output(final_seq=seq, substitution_data=data)
+    hx.set_init_seq(init_seq=init_seq)
+    hx.set_fields(init_pred=init_pred_proba, confidence_threshold=confidence_threshold, algorithm_type=type) # TODO: pass any additional params passed to parent function
+
+    # Compute variant cost
+    hx.compute_cost("num_differences")
+
     if verbose == True:
         print('')
 
-    return seq, data
+    return hx
 
 
 # def no_perturb(seq, y, aa_vocab, model, generator):

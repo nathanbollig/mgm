@@ -98,6 +98,14 @@ def test_sequences():
     assert(seq.integer_encoded[2] == 1)
     assert(np.all(seq.one_hot_encoded[2] == np.array([0,1,0,0,0])))
 
+    # Test copy
+    seq_copy = seq.copy()
+    assert(seq.integer_encoded[2] == 1)
+    assert(seq_copy.integer_encoded[2] == 1)
+    seq_copy.sub(2,4)
+    assert(seq.integer_encoded[2] == 1)
+    assert(seq_copy.integer_encoded[2] == 4)
+
 
     print("Passed!")
 

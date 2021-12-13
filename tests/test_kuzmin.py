@@ -6,11 +6,7 @@ Takes ~ 7 min
 """
 
 from mgm.data.kuzmin_data import load_kuzmin_data
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM
-from tensorflow.keras.layers import Dense
-from tensorflow.keras.layers import Bidirectional
+from mgm.models.NN import make_LSTM
 
 import pandas as pd
 import numpy as np
@@ -44,19 +40,6 @@ def test_kuzmin():
 
 
     # Train a model using species-aware CV splitting
-
-    def make_LSTM(X_train, y_train, N_POS):
-        n = X_train.shape[0]
-        X_train = X_train.reshape((n, N_POS, -1))
-        num_features = X_train.shape[2]
-
-        model = Sequential()
-        model.add(Bidirectional(LSTM(64), input_shape=(N_POS, num_features)))
-        model.add(Dense(16, activation='relu'))
-        model.add(Dense(1, activation='sigmoid'))
-        model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-        return model
 
     def run_LSTM(X_train, y_train, X_test, N_POS=2396):
 
