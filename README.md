@@ -13,6 +13,4 @@ The following subpackages are included in this repository:
 
 Notes to self - next steps:
 
-* Finish exp 1
-* Should Kuzmin data load return aa_vocab?
 * Randomized MGM - something like greedy_mgm will produce one Variant record; need a wrapper to call multiple times; create a new object in `history.py` called `VariantSet`which will store a list of Variants; pull fields that are the same across Variants into fields in the VariantSet
