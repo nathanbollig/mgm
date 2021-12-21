@@ -11,6 +11,7 @@ from mgm.algorithms.mutations import greedy_mgm
 from mgm.common.sequence import Sequence
 import pandas as pd
 import numpy as np
+from mgm.models.NN import make_LSTM
 
 
 def test_greedy_mgm_hotflip():
@@ -37,6 +38,9 @@ def test_greedy_mgm_hotflip():
     # Create a Sequence object
     x = X[i]
     seq = Sequence(x, y[i], aa_vocab)
+
+    # Adjust first character to gap
+    seq.sub(0,-1)
 
     # Apply hotflip using the greedy mgm wrapper
     hx = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=True)

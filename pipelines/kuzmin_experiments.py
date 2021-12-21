@@ -9,7 +9,7 @@ from mgm.common.sequence import Sequence
 from mgm.data.kuzmin_data import load_kuzmin_data
 from mgm.models.NN import make_LSTM
 import pickle
-
+import numpy as np
 
 def exp1():
     # Load Data
@@ -18,15 +18,18 @@ def exp1():
     n_characters = X.shape[2]
     assert(n_positions == 2396)
 
-    # Train Model
-    model = make_LSTM(X, y, N_POS=n_positions)
-
     # Find first negative instance in the dataset
     for i in range(X.shape[0]):
         if y[i] == 0:
             break
         else:
             i += 1
+
+    # Train Model
+    X_train = np.delete(X, i, axis=0)
+    y_train = np.delete(y, i)
+    model = make_LSTM(X_train, y_train, N_POS=n_positions)
+    model.fit(X_train, y_train, epochs=10)
 
     # Create a Sequence object
     x = X[i]

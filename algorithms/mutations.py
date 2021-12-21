@@ -47,7 +47,7 @@ def derive_gradient_funct(model):
     return K.function(model.inputs + [y_true], grad_ce)
 
 # TODO: create different method for randomized mgm
-def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False):
+def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False, fixed_iterations=None):
     """
     Greedily iterate substitution mutations until the predicted class label flips and the
     resulting prediction has confidence >= confidence_threshold. Apply to one sequence object.
@@ -58,6 +58,7 @@ def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weig
         model - a TensorFlow Model object
         confidence_threshold - mutation stops when model confidence exceeds this value (default: 0.5)
         type - method to select mutation at each step: 'hotflip' or 'lookahead_1'
+        fixed_iterations - if set to an integer, then stop after that number of iterations
 
     output:
         a list of indices
@@ -110,9 +111,17 @@ def greedy_mgm(seq, model=None, confidence_threshold = 0.5, type='hotflip', weig
         if seq.generator != None:
             one_flip_data['actual_label'] = seq.generator.predict(seq.integer_encoded)
 
+        # Stop after fixed iterations
+        if fixed_iterations != None:
+            if isinstance(fixed_iterations, int) == True:
+                if i >= fixed_iterations:
+                    break
+
         # Iterate
         data.append(one_flip_data)
         i += 1
+
+
 
     # Create history object
     hx = Variant()

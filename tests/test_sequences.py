@@ -37,13 +37,13 @@ def test_sequences():
     seq2 = Sequence(x, n_positions=7, n_characters=5)
     seq3 = Sequence(x, n_positions=7, aa_vocab=aa_vocab)
 
-    assert(seq1.integer_encoded == seq2.integer_encoded)
-    assert(seq2.integer_encoded == seq3.integer_encoded)
+    assert(np.all(seq1.integer_encoded == seq2.integer_encoded))
+    assert(np.all(seq2.integer_encoded == seq3.integer_encoded))
     assert(np.all(seq1.one_hot_encoded == seq2.one_hot_encoded))
     assert(np.all(seq2.one_hot_encoded == seq3.one_hot_encoded))
 
     # Case: x is an integer-encoded list
-    assert(seq1.integer_encoded == x)
+    assert(np.all(seq1.integer_encoded == x))
     expected_x = np.array([[0,1,0,0,0], [0,0,1,0,0], [1,0,0,0,0], [0,0,0,1,0], [0,0,0,0,1], [0,1,0,0,0], [0,0,1,0,0]])
     assert(np.all(seq.one_hot_encoded == expected_x))
 
@@ -51,7 +51,7 @@ def test_sequences():
     x_int = x
     x = np.array(x)
     seq4 = Sequence(x, n_positions=7, aa_vocab=aa_vocab)
-    assert(seq1.integer_encoded == seq4.integer_encoded)
+    assert(np.all(seq1.integer_encoded == seq4.integer_encoded))
     assert(np.all(seq1.one_hot_encoded == seq4.one_hot_encoded))
 
     # Case: x is a 2d array
@@ -65,7 +65,7 @@ def test_sequences():
         seq = Sequence(x, n_positions=5, n_characters=5)
 
     seq = Sequence(x, n_positions=7, aa_vocab=aa_vocab)
-    assert(seq.integer_encoded == seq4.integer_encoded)
+    assert(np.all(seq.integer_encoded == seq4.integer_encoded))
     assert(np.all(seq.one_hot_encoded == seq4.one_hot_encoded))
 
 
@@ -106,6 +106,10 @@ def test_sequences():
     assert(seq.integer_encoded[2] == 1)
     assert(seq_copy.integer_encoded[2] == 4)
 
+    # Test sub with gap
+    seq.sub(0,-1)
+    assert(seq.integer_encoded[0] == -1)
+    assert(np.all(seq.one_hot_encoded[0] == np.array([0,0,0,0,0])))
 
     print("Passed!")
 

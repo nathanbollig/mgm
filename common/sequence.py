@@ -82,9 +82,14 @@ class Sequence:
             # Store integer-encoded sequence
             self.integer_encoded = decode_from_one_hot(x, n_positions=self.n_positions, n_characters=self.n_characters)
 
+        # Enforce formatting
+        self.one_hot_encoded = self.one_hot_encoded.astype('float32')
+        self.integer_encoded = np.array(self.integer_encoded, dtype='int32')
+
     def sub(self, pos_to_change, new_char_idx):
         self.integer_encoded[pos_to_change] = new_char_idx
         self.one_hot_encoded = encode_as_one_hot(self.integer_encoded, n_positions=self.n_positions, n_characters=self.n_characters)
+        self.one_hot_encoded.astype('float32')
 
     def to_predict(self, representation='one_hot'):
         """
@@ -103,7 +108,7 @@ class Sequence:
         return self.n_positions
 
     def copy(self):
-        x = self.x.copy()
+        x = self.integer_encoded.copy()
         aa_vocab, generator = None, None
 
         if self.aa_vocab != None:
