@@ -7,10 +7,15 @@ The following subpackages are included in this repository:
 3. `data`: Subpackage for data generation and pre-preprocessing
 4. `models`: Subpackage for relevant classification models
 5. `pipelines`: Implementations of various experimental pipelines
-6. `analysis`: History (Variant and VariantSet) and analysis utilities
+6. `analysis`: History (Variant and VariantList) and analysis utilities
 7. `testing`: Testing utilities for the `mgm` package
 
 
 Notes to self - next steps:
 
-* Randomized MGM - something like greedy_mgm will produce one Variant record; need a wrapper to call multiple times; create a new object in `history.py` called `VariantSet`which will store a list of Variants; pull fields that are the same across Variants into fields in the VariantSet
+* Currently mgm-d flip flops. The initial flip is the same as hotflip, 
+    but then the second flip can best minimize the objective by reverting to the original
+    sequence. Essentially this feels like allowing the algorithm to pretend that the 
+    original mutation never happened. This behavior can probably be avoided by
+    increasing the value of lambda, but also it is unclear whether this behavior
+    is acceptable.

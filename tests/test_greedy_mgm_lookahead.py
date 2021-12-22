@@ -7,7 +7,7 @@ pd.DataFrame(data) is saved in test directory as sample_hotflip_data.csv
 
 import pickle
 import keras
-from mgm.algorithms.mutations import greedy_mgm
+from mgm.algorithms.mutations import variant_search
 from mgm.common.sequence import Sequence
 import pandas as pd
 import numpy as np
@@ -39,7 +39,7 @@ def test_greedy_mgm_lookahead():
     seq = Sequence(x, y[i], aa_vocab)
 
     # Apply lookahead using the greedy mgm wrapper
-    hx = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="lookahead_1", verbose=True)
+    hx = variant_search(seq, model=model, confidence_threshold = 0.9, type="lookahead_1", verbose=True)
     data = hx.substitution_data
 
     # Tests on data

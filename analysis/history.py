@@ -55,3 +55,39 @@ class Variant:
             self.variant_cost_type = "squared_difference"
 
         return self.variant_cost
+
+    def is_same_trajectory(self, other_variant):
+        # Check lengths are the same
+        if len(self.substitution_data) != len(other_variant.substitution_data):
+            return False
+
+        # Check pos to change and new chars are the same
+        for i in range(len(self.substitution_data)):
+            sub_data = self.substitution_data[i]
+            other_sub_data = other_variant.substitution_data[i]
+            if sub_data['pos_to_change'] != other_sub_data['pos_to_change']:
+                return False
+            if sub_data['new_char_idx'] != other_sub_data['new_char_idx']:
+                return False
+
+        return True
+
+class VariantList:
+    def __init__(self):
+        self.variants = []
+
+    def append(self, variant):
+        assert(isinstance(variant, Variant) == True)
+        self.variants.append(variant)
+
+    def initial_pred(self, i=0):
+        """
+        Retrieve the initial prediction stored in the ith Variant, which by default is the first.
+        """
+        if len(self) > 0:
+            return self.variants[i].init_pred
+        else:
+            return None
+
+    def __len__(self):
+        return len(self.variants)

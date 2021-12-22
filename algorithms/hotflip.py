@@ -7,7 +7,7 @@ Implementation of HotFlip approach to make a single character mutation.
 import numpy as np
 from mgm.algorithms.utils import compute_gradient
 
-def one_hotflip(seq, model=None, ignore_char_indices=[-1], weights=None, gamma=0.1, cost=100):
+def one_hotflip(seq, model=None, ignore_char_indices=[-1], weights=None, gamma=0.1, cost=100, loss=True):
     """
     Compute a single character flip using the HotFlip algorithm. Uses the one-hot encoding of the input sequence.
     
@@ -16,6 +16,7 @@ def one_hotflip(seq, model=None, ignore_char_indices=[-1], weights=None, gamma=0
         seq - input sequence (a Sequence object)
         weights - if provided, then flip is randomized according to provided weights; it is a dict like MatrixInfo.blosum62
         gamma - provided if weights are provided
+        loss - If true, the gradient is model loss wrt inputs. If false, the gradient is model output wrt inputs.
     
     Returns:
         Perturbed (one-hot-encoded) sequence
@@ -26,8 +27,8 @@ def one_hotflip(seq, model=None, ignore_char_indices=[-1], weights=None, gamma=0
     a_vector = seq.integer_encoded
 
     # get gradient
-    output = compute_gradient(seq, model)
-    
+    output = compute_gradient(seq, model, loss=loss)
+
     if weights == None:
         # Find character flip that causes maximum increase in loss
         max_loss_increase = 0

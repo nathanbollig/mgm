@@ -7,7 +7,7 @@ pd.DataFrame(data) is saved in test directory as sample_hotflip_data.csv
 
 import pickle
 import keras
-from mgm.algorithms.mutations import greedy_mgm
+from mgm.algorithms.mutations import variant_search
 from mgm.common.sequence import Sequence
 import pandas as pd
 import numpy as np
@@ -43,7 +43,7 @@ def test_greedy_mgm_hotflip():
     seq.sub(0,-1)
 
     # Apply hotflip using the greedy mgm wrapper
-    hx = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=True)
+    hx = variant_search(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=True)
     data = hx.substitution_data
 
     # Tests on data
@@ -59,6 +59,20 @@ def test_greedy_mgm_hotflip():
     assert(data[2]['change_number'] == 3)
     assert(data[2]['time_sec'] < 0.1)
 
+    # Additional test using gradient wtr model conf instead of loss
+    hx2 = variant_search(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=True, loss=False)
+    data = hx2.substitution_data
+    pd.DataFrame(data)
+    assert (len(data) > 0)
+    assert (len(data) == 3)
+    assert (data[0]['pos_to_change'] == 29)
+    assert (data[0]['new_char_idx'] == 9)
+    assert (data[1]['pos_to_change'] == 33)
+    assert (data[1]['new_char_idx'] == 10)
+    assert (data[2]['pos_to_change'] == 32)
+    assert (data[2]['new_char_idx'] == 10)
+    assert (data[2]['change_number'] == 3)
+    assert (data[2]['time_sec'] < 0.2)
 
     print("Passed!")
 

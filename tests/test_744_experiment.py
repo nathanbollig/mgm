@@ -12,7 +12,7 @@ import pickle
 import datetime
 from tensorflow import keras
 
-from mgm.algorithms.mutations import greedy_mgm
+from mgm.algorithms.mutations import variant_search
 from mgm.common.sequence import Sequence
 import pandas as pd
 
@@ -58,7 +58,7 @@ def test_744_experiment():
             seq = Sequence(x, y=label, aa_vocab=aa_vocab)
 
             # Apply hotflip using the greedy mgm wrapper
-            hx = greedy_mgm(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=False)
+            hx = variant_search(seq, model=model, confidence_threshold = 0.9, type="hotflip", verbose=False)
 
             # Save mutated sequence
             outputs.append(hx.final_seq.integer_encoded)

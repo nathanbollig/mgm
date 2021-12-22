@@ -19,6 +19,10 @@ class Sequence:
 
         The aa_vocab may look like:
         aa_vocab = ['A', 'R', 'N', 'D', 'C', 'E', 'Q', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V']
+
+        The representation_space is a dictionary of format representation_space[type] = matrix, where
+        the matrix is n_characters x amino acid embedding dimension. This stores information regarding fixed-length
+        amino acid embeddings.
         """
 
         # Class fields set by the constructor
@@ -30,6 +34,7 @@ class Sequence:
         self.generator = generator
         self.integer_encoded = None
         self.one_hot_encoded = None
+        self.representation_space = {}
 
         # Verify aa_vocab length matches number of characters
         if aa_vocab != None:
@@ -85,6 +90,9 @@ class Sequence:
         # Enforce formatting
         self.one_hot_encoded = self.one_hot_encoded.astype('float32')
         self.integer_encoded = np.array(self.integer_encoded, dtype='int32')
+
+        # Set one-hot matrix in representation space
+        self.representation_space['one-hot'] = np.identity(self.n_characters)
 
     def sub(self, pos_to_change, new_char_idx):
         self.integer_encoded[pos_to_change] = new_char_idx
