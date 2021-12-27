@@ -18,6 +18,16 @@ def get_full_path(*path):
     """
     return os.path.join(MAIN_DIRECTORY, *path)
 
+def set_data_directory(dirname):
+    """
+    Create a folder in 'data' for given dirname, then set working directory to this new folder.
+    """
+    data_path = os.path.join(os.path.dirname(get_full_path()), "data")
+    data_directory = os.path.join(data_path, dirname)
+    os.mkdir(data_directory)
+    os.chdir(data_directory)
+    return
+
 def decode_from_one_hot(x, n_positions=60, n_characters=20):
     """
     Convert one-hot vector representation to integers. If all zeros, then returns -1 in that position.

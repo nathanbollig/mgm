@@ -9,3 +9,4 @@ def risk_of_variant(variant):
 
 def _cost_to_risk(cost):
     return np.exp(-cost)
+

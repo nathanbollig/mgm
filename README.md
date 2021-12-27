@@ -13,9 +13,5 @@ The following subpackages are included in this repository:
 
 Notes to self - next steps:
 
-* Currently mgm-d flip flops. The initial flip is the same as hotflip, 
-    but then the second flip can best minimize the objective by reverting to the original
-    sequence. Essentially this feels like allowing the algorithm to pretend that the 
-    original mutation never happened. This behavior can probably be avoided by
-    increasing the value of lambda, but also it is unclear whether this behavior
-    is acceptable.
+* mgm.data.kuzmin_data.species_aware_CV() can be improved and made more generic
+* run exp3

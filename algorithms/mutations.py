@@ -108,7 +108,7 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
     init_pred_proba = model.predict(seq.to_predict()).item()
     i = 1
 
-    while i < len(seq) and (int(y) == pred or conf < confidence_threshold):
+    while i < len(seq) and conf < confidence_threshold:
         if verbose==True:
             print('.', end='', flush=True) # one dot per character flip
 
@@ -128,11 +128,14 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
         pred_proba = model.predict(seq.to_predict()).item()
         pred = int(pred_proba > 0.5)
 
-        # Compute confidence that class label has been flipped
-        if int(y) == 0:
-            conf = pred_proba
-        else:
-            conf = 1 - pred_proba
+        # # Compute confidence that class label has been flipped
+        # if int(y) == 0:
+        #     conf = pred_proba
+        # else:
+        #     conf = 1 - pred_proba
+
+        # Use pred_proba in stopping condition
+        conf = pred_proba
 
         # Store values in flip data dictionary
         one_flip_data['pred_proba'] = pred_proba
@@ -162,8 +165,9 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
     hx.set_init_seq(init_seq=init_seq)
     hx.set_fields(init_pred=init_pred_proba, confidence_threshold=confidence_threshold, algorithm_type=type) # TODO: pass any additional params passed to parent function
 
-    # Compute variant cost
+    # Compute variant cost and risk
     hx.compute_cost("num_differences")
+    hx.compute_risk("reciprocate_cost")
 
     if verbose == True:
         print('')

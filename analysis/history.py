@@ -34,6 +34,8 @@ class Variant:
         self.init_pred = None
         self.variant_cost = None
         self.variant_cost_type = None
+        self.variant_risk = None
+        self.variant_risk_type = None
 
     def set_mgm_output(self, final_seq,substitution_data):
         self.final_seq = final_seq
@@ -55,6 +57,12 @@ class Variant:
             self.variant_cost_type = "squared_difference"
 
         return self.variant_cost
+
+    def compute_risk(self, type):
+        if type=="reciprocate_cost":
+            self.variant_risk = 1/self.variant_cost
+            self.variant_risk_type = "reciprocate_cost"
+        return self.variant_risk
 
     def is_same_trajectory(self, other_variant):
         # Check lengths are the same
