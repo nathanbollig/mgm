@@ -102,10 +102,10 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
     # Initial values
     y = seq.y
     pred = y
-    conf = 0
     data = []
     init_seq = seq.copy()
     init_pred_proba = model.predict(seq.to_predict()).item()
+    conf = init_pred_proba
     i = 1
 
     while i < len(seq) and conf < confidence_threshold:

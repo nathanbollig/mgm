@@ -184,12 +184,14 @@ def load_kuzmin_data():
 
     return X, y, species, deflines, sequences, sp, human_virus_species_list
 
-def species_aware_CV(model_initializer, X, y, species, sp, human_virus_species_list, epochs=1, output_string="test"):
+def species_aware_CV(model_initializer, X, y, species, human_virus_species_list, epochs=1, output_string="test"):
     """
     Takes in a model initializer and kuzmin data, applies species-aware 7-fold CV to determine model performance.
 
     Model initializer parameter is a function that takes three parameters: X, y, N_POS
     """
+
+    sp = index_sets(human_virus_species_list, species)
 
     def evaluate(y_proba, y_test, y_proba_train, y_train, verbose=False):
         # PR curve
@@ -329,7 +331,14 @@ def species_aware_CV(model_initializer, X, y, species, sp, human_virus_species_l
     plt.clf()
 
     # Generate pooled PR curve
-    plt.scatter(Y_proba, Y_species, facecolors='none', edgecolors='r')
+    Y_vals = []
+    for i in Y_species:
+        if i==0:
+            Y_vals.append('Non-human')
+        else:
+            Y_vals.append(human_virus_species_list[i-1])
+
+    plt.scatter(Y_proba, Y_vals, facecolors='none', edgecolors='r')
     plt.xlabel('Predicted probability')
     plt.ylabel('Species')
     plt.title('Predicted Probability vs. Infecting Species')
