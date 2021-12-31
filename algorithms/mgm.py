@@ -1,7 +1,7 @@
 import numpy as np
 from mgm.algorithms.utils import compute_gradient
 
-def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='squared_difference', skip_indices=[-1], invalid_sub_indices=[-1], lambda_param=1e4, loss=False):
+def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='squared_difference', skip_indices=[-1], invalid_sub_indices=[-1], lambda_param=1e9, loss=False, hashes=None):
     """
     Compute a single character flip using the mgm_d algorithm, based on a fixed-length vector embedding for each
     amino acid.
@@ -16,6 +16,7 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
         invalid_sub_indices - do not substitute with these characters (list of indices)
         lambda_param - hyperparameter in mgm-d
         loss - If true, the gradient is model loss wrt inputs. If false, the gradient is model output wrt inputs.
+        hashes - Set object of hash values for all sequences seen so far.
 
     Returns:
         Variant object
@@ -84,18 +85,21 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
             if min_objective_value is None:
                 min_objective_value = objective_value
             elif objective_value < min_objective_value:
+                if hashes is not None and seq.get_hash_of_sub(i, b) in hashes:
+                    continue  # don't accept mutation that has been seen before
                 min_objective_value = objective_value
                 pos_to_change = i
                 current_char_idx = a
                 new_char_idx = b
+
+    # Make substitution
+    seq.sub(pos_to_change, new_char_idx)
+    hashes.add(seq.get_hash())
 
     data = {}
     data['min_objective_value'] = min_objective_value
     data['pos_to_change'] = pos_to_change
     data['current_char_idx'] = current_char_idx
     data['new_char_idx'] = new_char_idx
-
-    # Make substitution
-    seq.sub(pos_to_change, new_char_idx)
 
     return seq, data

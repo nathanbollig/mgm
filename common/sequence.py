@@ -4,6 +4,13 @@ Represent a single amino acid sequence.
 from mgm.common.utils import decode_from_one_hot, encode_as_one_hot
 import numpy as np
 
+def compute_hash(integer_encoded):
+    """
+    Produce a hash based on this sequence. Based on Python hash of a string formed from the integer encoding.
+    """
+    int_string = ','.join(str(e) for e in integer_encoded)
+    return hash(int_string)
+
 class Sequence:
     def __init__(self, x, y=None, aa_vocab=None, n_positions=None, n_characters=None, generator=None):
         """
@@ -127,3 +134,10 @@ class Sequence:
         new = Sequence(x=x, y=self.y, aa_vocab=aa_vocab, n_positions=self.n_positions, n_characters=self.n_characters, generator=generator)
         return new
 
+    def get_hash_of_sub(self, pos_to_change, new_char_idx):
+        new_integer_encoded = self.integer_encoded.copy()
+        new_integer_encoded[pos_to_change] = new_char_idx
+        return compute_hash(new_integer_encoded)
+
+    def get_hash(self):
+        return compute_hash(self.integer_encoded)

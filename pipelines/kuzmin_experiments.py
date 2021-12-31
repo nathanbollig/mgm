@@ -205,7 +205,7 @@ def exp6_SARS():
     exp3(species_to_withhold = ['Severe_acute_respiratory_syndrome_related_coronavirus', 'SARS_CoV_2'] , validate_model=False)
 
 if __name__ == "__main__":
-    set_data_directory("exp3_test_CNN2")
+    set_data_directory("exp3_test_CNN3")
     exp3(validate_model=True, model_initializer=make_CNN)
 
     # # Run with validation!!

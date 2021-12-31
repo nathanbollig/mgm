@@ -4,7 +4,7 @@ from mgm.algorithms.mutations import variant_search
 from mgm.algorithms.utils import compute_gradient
 from mgm.common.sequence import Sequence
 from mgm.data.kuzmin_data import load_kuzmin_data
-from mgm.models.NN import make_LSTM
+from mgm.models.NN import make_LSTM, make_CNN
 import numpy as np
 
 # Load Data

@@ -103,15 +103,13 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
     y = seq.y
     pred = y
     data = []
+    hashes = set()
     init_seq = seq.copy()
     init_pred_proba = model.predict(seq.to_predict()).item()
     conf = init_pred_proba
     i = 1
 
     while i < len(seq) and conf < confidence_threshold:
-        if verbose==True:
-            print('.', end='', flush=True) # one dot per character flip
-
         time_start = datetime.datetime.now()
 
         # Execute one flip
@@ -122,7 +120,10 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
         if type=='lookahead_1':
             seq, one_flip_data = one_lookahead_flip(seq, model=model, verbose=verbose)
         if type=='mgm-d':
-            seq, one_flip_data = mgm_d(seq, init_seq, model=model, loss=loss)
+            seq, one_flip_data = mgm_d(seq, init_seq, model=model, loss=loss, hashes=hashes)
+
+        if verbose==True:
+            print('.', end='', flush=True) # one dot per character flip
 
         # Apply model to updated sequence
         pred_proba = model.predict(seq.to_predict()).item()
