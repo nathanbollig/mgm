@@ -60,7 +60,7 @@ class Variant:
 
     def compute_risk(self, type):
         if type=="reciprocate_cost":
-            self.variant_risk = 1/self.variant_cost
+            self.variant_risk = 1/(self.variant_cost + 1)
             self.variant_risk_type = "reciprocate_cost"
         return self.variant_risk
 

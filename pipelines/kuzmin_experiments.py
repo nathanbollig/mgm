@@ -139,9 +139,12 @@ def exp3(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initial
     # Rank by risk score
     rows = []
     for i, variant in enumerate(variants):
+        if len(variant.substitution_data) > 0:
+            final_pred = variant.substitution_data[-1]['conf']
+        else:
+            final_pred = variant.init_pred
         row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type,
-               species_withheld[i], y_withheld[i], variant.init_pred, variant.substitution_data[-1]['conf'],
-               deflines_withheld[i])
+               species_withheld[i], y_withheld[i], variant.init_pred, final_pred, deflines_withheld[i])
         rows.append(row)
 
     cols = ['Risk score', 'Risk score type', 'Cost', 'Cost type', 'Species', 'Initial label', 'Initial pred',
@@ -191,7 +194,7 @@ def exp5_MERS():
     Hypothesis: camel MERS will be ranked highly, pos sequences will be ranked highly (like positive controls)
     """
 
-    exp3(species_to_withhold = 'Middle_East_respiratory_syndrome_coronavirus', validate_model=False)
+    exp3(species_to_withhold = 'Middle_East_respiratory_syndrome_coronavirus', validate_model=True)
 
 def exp6_SARS():
     """
@@ -202,11 +205,11 @@ def exp6_SARS():
     Hypothesis: camel MERS will be ranked highly, pos sequences will be ranked highly (like positive controls)
     """
 
-    exp3(species_to_withhold = ['Severe_acute_respiratory_syndrome_related_coronavirus', 'SARS_CoV_2'] , validate_model=False)
+    exp3(species_to_withhold = ['Severe_acute_respiratory_syndrome_related_coronavirus', 'SARS_CoV_2'] , validate_model=True)
 
 if __name__ == "__main__":
-    set_data_directory("exp3_test_CNN3")
-    exp3(validate_model=True, model_initializer=make_CNN)
+    set_data_directory("exp6_test_LSTM1")
+    exp6_SARS()
 
     # # Run with validation!!
     # # SARS CoV 2
