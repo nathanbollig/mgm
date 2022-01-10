@@ -30,5 +30,5 @@ def test_kuzmin():
     LOOCV(model_initializer, X, y, species, epochs=5, output_string="test")
 
 if __name__ == "__main__":
-    set_data_directory("test_kuzmin3")
+    set_data_directory("test_kuzmin4")
     test_kuzmin()

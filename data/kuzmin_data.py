@@ -350,7 +350,7 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test"):
     # Other plot setup
     ax.set_xlabel('Model prediction')
     ax.set_title('Predictions on each holdout set')
-    ax.yaxis.grid(linewidth=1, linestyle='-')
+    ax.yaxis.grid(linewidth=1, linestyle='--')
 
     # Legend
     red_patch = mpatches.Patch(color='red', alpha=0.3, label='Human-infecting')
