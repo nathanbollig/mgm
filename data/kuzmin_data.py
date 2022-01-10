@@ -11,10 +11,12 @@ Biochem Biophys Res Commun. 2020;533: 553–558. doi:10.1016/j.bbrc.2020.09.010
 
 import numpy as np
 from Bio import SeqIO
-from matplotlib import pyplot as plt
+from matplotlib.colors import to_rgba
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 from sklearn.metrics import accuracy_score, recall_score, precision_score, f1_score, average_precision_score, roc_curve, \
     roc_auc_score, precision_recall_curve
-from sklearn.model_selection import GroupKFold
+from sklearn.model_selection import GroupKFold, LeaveOneOut
 from sklearn.utils import shuffle
 import pandas as pd
 from mgm.common.utils import get_full_path
@@ -117,6 +119,8 @@ def get_data(list_of_sequences):
 
 def index_sets(human_virus_species_list, species):
     """
+    Retrieves indices of human-infecting species and all non-human sequences in one group - suitable for 7-fold CV.
+
     The data loading approach uses a set of parallel lists (deflines, protein_sequences, etc.). With respect
     to the common ordering of data items, we want to identify the set of indices for each human-infecting species.
 
@@ -184,7 +188,181 @@ def load_kuzmin_data():
 
     return X, y, species, deflines, sequences, sp, human_virus_species_list
 
-def species_aware_CV(model_initializer, X, y, species, human_virus_species_list, epochs=1, output_string="test"):
+########################################################################################################################
+# Evaluation code written for models using this data
+########################################################################################################################
+def all_species_index_sets(species):
+    """
+    Builds index of indices for each unique species in the species list.
+
+    Inputs:
+        species - list of species labels for each data item (e.g. parallel to deflines)
+
+    Output:
+        species_index - dictionary such that sp[species name] is a list of indices corresponding to
+                that species in the species list.
+    """
+
+    species_index = {}
+
+    for i, species_name in enumerate(species):
+        if species_name not in species_index.keys():
+            species_index[species_name] = []
+        species_index[species_name].append(i)
+
+    return species_index
+
+def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test"):
+    """
+    Takes in a model initializer and kuzmin data, applies leave-one-out CV (wrt viral species) to determine model performance.
+
+    Strategy:
+        1. Iterate over unique viral species (54+7 in total)
+        2. For each species, withhold all sequences of that species.
+        3. Train a model on the remaining sequences
+        4. Apply the trained model to each of the withheld sequences, to get a set of predicted probabilities.
+        5. Report average predicted probability for each viral species (average in csv file + distributions shown in violin plot)
+        6. Use this set of 61 numbers with corresponding binary targets to generate an ROC curve.
+
+    Model initializer parameter is a function that takes three parameters: X, y, N_POS
+    """
+    # Build dictionary of index sets for each species
+    species_index = all_species_index_sets(species)
+
+    # Get list of all unique species names
+    species_names_list = np.array(list(species_index.keys()))
+
+    # Do LOOCV on species_names_list
+    loo = LeaveOneOut()
+    num_splits = loo.get_n_splits(species_names_list)
+    print("Running LOOCV with %i splits..." % (num_splits,))
+
+    output = []
+    i = 0
+    Y_avg_proba = []
+    Y_pred_lists = []
+    Y_targets = []
+    Y_species = []
+
+    for train_species_idx, hold_species_idx in loo.split(species_names_list):
+        train_species = species_names_list[train_species_idx] # names of species to be in training set
+        hold_species = species_names_list[hold_species_idx] # name of withheld species
+
+        assert (len(hold_species) == 1)
+        hold_species = hold_species[0]
+
+        # Build train index set (into X and y)
+        train = []
+        for name in train_species:
+            index_set = species_index[name] # list of indices where this species is
+            train.extend(index_set)
+
+        # Built test index set (into X and y)
+        test = species_index[hold_species]
+
+        # Create train and test set
+        X_train = X[train]
+        y_train = y[train]
+        species_train = species[train]
+        X_test = X[test]
+        y_test = y[test]
+        species_test = species[test]
+
+        print("*******************FOLD %i: %s*******************" % (i + 1, hold_species))
+        test_size = len(y_test)
+        print("Test size = %i" % (test_size,))
+
+        assert(np.all(y_test == y_test[0]))
+        test_label = y_test[0]
+        print("Test label = %i" % (test_label,))
+
+        # Train model
+        model = model_initializer(X_train, y_train, N_POS=X.shape[1])
+        model.fit(X_train, y_train, epochs=epochs)
+
+        # Apply model to test set
+        y_proba = model.predict(X_test)
+        pred_list = y_proba.flatten()
+        assert(len(pred_list) == len(y_test))
+        mean_pred = np.mean(pred_list)
+
+        # Store fold results
+        output.append((i, hold_species, test_label, test_size, mean_pred, pred_list))
+        Y_avg_proba.append(mean_pred)
+        Y_targets.append(test_label)
+        Y_species.append(hold_species)
+        Y_pred_lists.append(pred_list)
+
+        i += 1
+
+    # Save fold summary
+    output_df = pd.DataFrame(output, columns=['fold', 'species', 'target_label', 'test_size', 'mean_pred', 'pred_list'])
+    print(output_df)
+    output_df.to_csv('%s_results.csv' % (output_string,), index=False)
+
+    # Generate ROC curve
+    def get_ROC(Y_targets, Y_proba):
+        fpr, tpr, _ = roc_curve(Y_targets, Y_proba)
+        try:
+            auc = roc_auc_score(Y_targets, Y_proba)
+        except ValueError:
+            auc = 0
+        return fpr, tpr, auc
+
+    fpr, tpr, auc = get_ROC(Y_targets, Y_avg_proba)
+    plt.step(fpr, tpr, where='post', label='(AUC=%.2f)' % (auc,))
+    plt.xlabel('False positive rate')
+    plt.ylabel('True positive rate')
+    plt.title('ROC curve (based on ranking mean pred on each viral species)')
+    plt.legend(loc='upper left', fontsize=7, bbox_to_anchor=(1.05, 1))
+    plt.savefig("%s_ROC.jpg" % (output_string,), dpi=400, bbox_inches="tight")
+    plt.clf()
+
+    # Violin plot
+    fig, ax = plt.subplots()
+    parts = plt.violinplot(Y_pred_lists, vert=False, widths=0.9)
+
+    # Set human-infecting violins to red color
+    for i, violin in enumerate(parts['bodies']):
+        if Y_targets[i] == 1:
+            violin.set_facecolor('red')
+            #violin.set_edgecolor('red')
+
+    # Set lines to red color
+    cbars_color = parts['cbars'].get_color()[0]
+
+    colors = []
+    for i in range(len(Y_targets)):
+        if Y_targets[i] == 1:
+            colors.append(np.array(to_rgba('red')))
+        else:
+            colors.append(cbars_color)
+    parts['cbars'].set_color(colors)
+    parts['cmaxes'].set_color(colors)
+    parts['cmins'].set_color(colors)
+
+    # Label y axis
+    ax.yaxis.set_tick_params(direction='out')
+    ax.set_yticks(np.arange(1, len(Y_species) + 1), labels=Y_species)
+    ax.set_ylim(0.25, len(Y_species) + 0.75)
+    ax.set_ylabel('Virus species')
+
+    # Other plot setup
+    ax.set_xlabel('Model prediction')
+    ax.set_title('Predictions on each holdout set')
+    ax.yaxis.grid(linewidth=1, linestyle='-')
+
+    # Legend
+    red_patch = mpatches.Patch(color='red', alpha=0.3, label='Human-infecting')
+    blue_patch = mpatches.Patch(color='blue', alpha=0.3, label='Non-human-infecting')
+    plt.legend(handles=[red_patch, blue_patch], loc='upper left', fontsize=12, bbox_to_anchor=(1.05, 1))
+
+    # Save plot
+    fig.set_size_inches(13, 12)
+    fig.savefig("%s_preds.jpg" % (output_string,), dpi=600, bbox_inches="tight")
+    plt.clf()
+
+def species_aware_CV(model_initializer, X, y, species, human_virus_species_list, epochs=1, output_string="test", remove_duplicate_species=False):
     """
     Takes in a model initializer and kuzmin data, applies species-aware 7-fold CV to determine model performance.
 
@@ -273,9 +451,19 @@ def species_aware_CV(model_initializer, X, y, species, human_virus_species_list,
         y_test = np.concatenate((y[sp['non-human']][test], y[sp[i]]))
         y_test_species = np.concatenate((np.zeros((len(test),), dtype=int), np.full((len(y[sp[i]]),), i + 1,
                                                                                     dtype=int)))  # 0 for non-human, 1-based index for human
+        species_test = np.concatenate((species[sp['non-human']][test], species[sp[i]]))
+        num_test_nonhuman_species = np.unique(species[sp['non-human']][test]).size
+
+
         # Shuffle arrays
         X_train, y_train = shuffle(X_train, y_train)
         X_test, y_test, y_test_species = shuffle(X_test, y_test, y_test_species)
+
+        # Filter out duplicate species in test set
+        if remove_duplicate_species:
+            assert(X_test.shape[0] == len(y_test))
+            assert(len(y_test) == len(species_test))
+            # If we want to, here we could filter modify y_test and X_test according to desired deduplication logic
 
         # Store data for testing
         X_TRAIN.append(X_train)
@@ -286,6 +474,7 @@ def species_aware_CV(model_initializer, X, y, species, human_virus_species_list,
         print("*******************FOLD %i: %s*******************" % (i + 1, human_virus_species_list[i]))
         print("Test size = %i" % (len(y_test),))
         print("Test non-human size = %i" % (len(X[sp['non-human']][test])), )
+        print("Test non-human # species = %i" % (num_test_nonhuman_species,))
         print("Test human size = %i" % (len(X[sp[i]]),))
         print("Test pos class prevalence: %.3f" % (np.mean(y_test),))
 
