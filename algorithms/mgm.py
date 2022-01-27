@@ -35,6 +35,9 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
     if representation == 'one-hot':
         x_current = seq.one_hot_encoded
         x_init = init_seq.one_hot_encoded
+    else:
+        x_current = seq.get_encoding(representation)
+        x_init = init_seq.get_encoding(representation)
 
     # Get integer-encoded sequence
     a_vector = seq.integer_encoded
@@ -65,12 +68,12 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
                 if b in invalid_sub_indices:
                     continue
 
-            # Compute array of term1 values over positions
+            # Compute array of term1 values over components of representation
             term1_factor1 = x_current[i] - x_init[i]
             term1_factor2 = R[b] - x_current[i]
             term1 = np.multiply(term1_factor1, term1_factor2)
 
-            # Compute array of term2 values over positions
+            # Compute array of term2 values over components of representation
             term2_factor1 = output[i]
             term2_factor2 = R[b] - x_current[i]
             term2 = np.multiply(term2_factor1, term2_factor2)
@@ -94,7 +97,8 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
 
     # Make substitution
     seq.sub(pos_to_change, new_char_idx)
-    hashes.add(seq.get_hash())
+    if hashes is not None:
+        hashes.add(seq.get_hash())
 
     data = {}
     data['min_objective_value'] = min_objective_value

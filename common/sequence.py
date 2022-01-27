@@ -3,6 +3,8 @@ Represent a single amino acid sequence.
 """
 from mgm.common.utils import decode_from_one_hot, encode_as_one_hot
 import numpy as np
+import pickle
+from mgm.common.utils import get_full_path
 
 def compute_hash(integer_encoded):
     """
@@ -10,6 +12,20 @@ def compute_hash(integer_encoded):
     """
     int_string = ','.join(str(e) for e in integer_encoded)
     return hash(int_string)
+
+def get_kidera_factors():
+    """
+    Load in pickle file and return dictionary of format dict[char] = vector.
+    """
+    input_file_name = get_full_path("common", "map_attribute.pkl")
+    with open(input_file_name, "rb") as f:
+        map_attribute = pickle.load(f)
+
+    # Convert values to numpy arrays
+    for key, val in map_attribute.items():
+        map_attribute[key] = np.array(val)
+
+    return map_attribute
 
 class Sequence:
     def __init__(self, x, y=None, aa_vocab=None, n_positions=None, n_characters=None, generator=None):
@@ -50,6 +66,10 @@ class Sequence:
                     raise ValueError("n_characters must match the length of aa_vocab.")
             else:
                 self.n_characters = len(aa_vocab) # can infer n_characters from aa_vocab if necessary
+
+            # Convert vocab to upper case
+            aa_vocab = [char.upper() for char in aa_vocab]
+            self.aa_vocab = aa_vocab
 
         # Verify required arguments
         if self.n_characters == None:
@@ -100,6 +120,37 @@ class Sequence:
 
         # Set one-hot matrix in representation space
         self.representation_space['one-hot'] = np.identity(self.n_characters)
+
+        # Set kidera representation space
+        if aa_vocab is not None:
+            map_attribute = get_kidera_factors()
+            R_kidera = []
+            for char in aa_vocab:
+                if char == 'X':
+                    non_ambiguous_chars = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
+                    vals = [map_attribute[c] for c in non_ambiguous_chars]
+                    vector = sum(vals) / len(vals)
+                elif char == 'Z':
+                    vector = (map_attribute['E'] + map_attribute['Q']) / 2.0
+                elif char == 'B':
+                    vector = (map_attribute['D'] + map_attribute['N']) / 2.0
+                elif char == 'J':
+                    vector = (map_attribute['L'] + map_attribute['I']) / 2.0
+                elif char == 'U':
+                    vector = map_attribute['C']  # Treat selenocysteine as cysteine
+                else:
+                    vector = map_attribute[char]
+
+                R_kidera.append(vector)
+
+            self.representation_space['kidera'] = np.array(R_kidera)
+
+    def get_encoding(self, type):
+        """
+        Return encoding of sequence. Type param is key into representation_space.
+        """
+        R = self.representation_space[type]
+        return np.matmul(self.one_hot_encoded, R)
 
     def sub(self, pos_to_change, new_char_idx):
         self.integer_encoded[pos_to_change] = new_char_idx

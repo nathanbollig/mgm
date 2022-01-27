@@ -4,6 +4,7 @@ from mgm.algorithms.mutations import variant_search
 from mgm.algorithms.utils import compute_gradient
 from mgm.common.sequence import Sequence
 from mgm.data.kuzmin_data import load_kuzmin_data
+from mgm.data.kuzmin_data import aa_vocab
 from mgm.models.NN import make_LSTM, make_CNN
 import numpy as np
 
@@ -28,7 +29,7 @@ model.fit(X_train, y_train, epochs=2)
 
 # Create a Sequence object
 x = X[i]
-seq = Sequence(x, y[i], n_characters=n_characters, n_positions=n_positions)
+seq = Sequence(x, y[i], n_characters=n_characters, n_positions=n_positions, aa_vocab=aa_vocab)
 
 # Run mgm-d and hotflip for one sub
 seq_mgm_d, data_mgm_d = mgm_d(seq.copy(), seq, model=model, representation='one-hot', cost_function='squared_difference', lambda_param=1)

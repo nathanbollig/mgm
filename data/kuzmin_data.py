@@ -28,6 +28,9 @@ human_virus_species_set = {'Human_coronavirus_NL63', 'Betacoronavirus_1',
 human_virus_species_list = list(human_virus_species_set)
 human_virus_species_list.sort()
 
+alphabet = 'ABCDEFGHIJKLMNPQRSTUVWXYZ-'
+aa_vocab = list(alphabet)[:-1]
+
 class fasta_sequence:
     def __init__(self, defline, sequence, target, type_of_encoding="onehot"):
         self.defline = defline
@@ -50,9 +53,6 @@ class fasta_sequence:
         """
 
         def encoding(sequence, type_of_encoding):
-
-            # define character alphabet
-            alphabet = 'ABCDEFGHIJKLMNPQRSTUVWXYZ-'
             # define a mapping of chars to integers
             char_to_int = dict((c, i) for i, c in enumerate(alphabet))
 

@@ -111,6 +111,24 @@ def test_sequences():
     assert(seq.integer_encoded[0] == -1)
     assert(np.all(seq.one_hot_encoded[0] == np.array([0,0,0,0,0])))
 
+    # Test Kidera representation space
+    seq.sub(0, 0)
+    assert(seq.aa_vocab[0] == 'A')
+    R_kidera = seq.representation_space['kidera']
+    assert(R_kidera.shape == (seq.n_characters, 10))
+
+    # Test get_encoding - one-hot
+    oh1 = seq.get_encoding('one-hot')
+    oh2 = seq.one_hot_encoded
+    assert(np.all(oh1==oh2))
+
+    # Test get_encoding - kidera
+    k = seq.get_encoding('kidera')
+    i = 1
+    char = seq.integer_encoded[i]
+    rep = R_kidera[char, :]
+    assert(np.all(np.isclose(rep, k[i, :])))
+
     print("Passed!")
 
 if __name__ == "__main__":
