@@ -102,16 +102,22 @@ def read_fasta(input_file_name):
     return deflines, protein_sequences, targets
 
 
-def get_data(list_of_sequences):
+def get_data(list_of_sequences, label_type):
     """
     Iterate through a list of fasta_sequence objects and retrieve lists of encoded sequences, targets, and species
+
+    The definition of binary target is determined by the label_type.
     """
     list_of_encoded_sequences = []
     list_of_targets = []
     list_of_species = []
     for entry in list_of_sequences:
         list_of_encoded_sequences.append(entry.encoded)
-        list_of_targets.append(entry.target)
+        if label_type == "by_species":
+            list_of_targets.append(entry.target)
+        if label_type == "by_host":
+            label = int(entry.host_species == 'Human')
+            list_of_targets.append(label)
         list_of_species.append(entry.virus_species)
 
     return list_of_encoded_sequences, list_of_targets, list_of_species
@@ -148,9 +154,12 @@ def index_sets(human_virus_species_list, species):
 
     return sp
 
-def load_kuzmin_data():
+def load_kuzmin_data(label_type="by_species"):
     """
     Main function for loading the dataset of Kuzmin et al.
+
+    Input:
+        label_type - "by_species" (+ if virus species infects human) or "by_host" (+ if isolated from human host)
 
     Returns the following objects. The first four are parallel lists:
         X - one-hot encoded sequences, dataset shape (1238, 2396, 25)
@@ -158,7 +167,7 @@ def load_kuzmin_data():
         species - 1d string array of species labels of length 1238
         deflines - list of deflines of length 1238
         sequences - list of fasta_sequence objects of length 1238
-        sp - index set dictionary as returned by index_sets()
+        sp - index set dictionary as returned by all_species_index_sets()
         human_virus_species_list - list of human infecting species labels (indices are keys in `sp`)
     """
     # Read fasta file
@@ -171,7 +180,7 @@ def load_kuzmin_data():
         sequences.append(seq)
 
     # Get data from sequence objects
-    X, y, species = get_data(sequences)
+    X, y, species = get_data(sequences, label_type=label_type)
 
     # Convert data to numpy arrays and set shape
     N_POS = 2396
@@ -184,7 +193,7 @@ def load_kuzmin_data():
     X, y, species, deflines, sequences = shuffle(X, y, species, deflines, sequences)
 
     # Get index sets
-    sp = index_sets(human_virus_species_list, species)
+    sp = all_species_index_sets(species)
 
     return X, y, species, deflines, sequences, sp, human_virus_species_list
 
@@ -212,19 +221,28 @@ def all_species_index_sets(species):
 
     return species_index
 
-def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test"):
+def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desired_precision=None):
     """
-    Takes in a model initializer and kuzmin data, applies leave-one-out CV (wrt viral species) to determine model performance.
+    Takes in a model initializer and kuzmin data, applies leave-one-out CV (wrt viral species) to determine model performance and threshold for desired precision.
 
     Strategy:
-        1. Iterate over unique viral species (54+7 in total)
+        1. Iterate over unique viral species (54+7 in total for whole dataset)
         2. For each species, withhold all sequences of that species.
         3. Train a model on the remaining sequences
         4. Apply the trained model to each of the withheld sequences, to get a set of predicted probabilities.
-        5. Report average predicted probability for each viral species (average in csv file + distributions shown in violin plot)
-        6. Use this set of 61 numbers with corresponding binary targets to generate an ROC curve.
+        5. Report average predicted probability for each class within that viral species (average in csv file + distributions shown in violin plot)
+        6. Use this set of numbers with corresponding binary targets to generate an ROC curve.
 
-    Model initializer parameter is a function that takes three parameters: X, y, N_POS
+    Inputs:
+        Model initializer - a function that takes three parameters: X, y, N_POS
+        X, y, species - data, labels, and a parallel list of species
+        desired_precision - determines deserved level of model precision for the computed prediction threshold
+        output_string - file prefix; if None, no files are saved
+
+    Output:
+        Saves data files and images for model evaluation
+        Returns smallest prediction threshold at which at least the desired precision is reached
+
     """
     # Build dictionary of index sets for each species
     species_index = all_species_index_sets(species)
@@ -272,9 +290,12 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test"):
         test_size = len(y_test)
         print("Test size = %i" % (test_size,))
 
-        assert(np.all(y_test == y_test[0]))
-        test_label = y_test[0]
-        print("Test label = %i" % (test_label,))
+        # Check if one label on test fold, e.g. if labels are by species
+        one_test_label = np.all(y_test == y_test[0])
+
+        if one_test_label:
+            test_label = y_test[0]
+            print("Test label = %i" % (test_label,))
 
         # Train model
         model = model_initializer(X_train, y_train, N_POS=X.shape[1])
@@ -284,21 +305,48 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test"):
         y_proba = model.predict(X_test)
         pred_list = y_proba.flatten()
         assert(len(pred_list) == len(y_test))
-        mean_pred = np.mean(pred_list)
 
-        # Store fold results
-        output.append((i, hold_species, test_label, test_size, mean_pred, pred_list))
-        Y_avg_proba.append(mean_pred)
-        Y_targets.append(test_label)
-        Y_species.append(hold_species)
-        Y_pred_lists.append(pred_list)
+        if one_test_label:
+            mean_pred = np.mean(pred_list)
+            # Store fold results
+            output.append((i, hold_species, test_label, test_size, mean_pred, pred_list))
+            Y_avg_proba.append(mean_pred)
+            Y_targets.append(test_label)
+            Y_species.append(hold_species)
+            Y_pred_lists.append(pred_list)
+        else:
+            pred_list0 = pred_list[y_test == 0]
+            pred_list1 = pred_list[y_test == 1]
+            # Store 0 target results on fold
+            output.append((i, hold_species, 0, len(pred_list0), np.mean(pred_list0), pred_list0))
+            Y_avg_proba.append(np.mean(pred_list0))
+            Y_targets.append(0)
+            Y_species.append(hold_species)
+            Y_pred_lists.append(pred_list0)
+            # Store 1 target results on fold
+            output.append((i, hold_species, 1, len(pred_list1), np.mean(pred_list1), pred_list1))
+            Y_avg_proba.append(np.mean(pred_list1))
+            Y_targets.append(1)
+            Y_species.append(hold_species)
+            Y_pred_lists.append(pred_list1)
 
         i += 1
 
     # Save fold summary
     output_df = pd.DataFrame(output, columns=['fold', 'species', 'target_label', 'test_size', 'mean_pred', 'pred_list'])
     print(output_df)
-    output_df.to_csv('%s_results.csv' % (output_string,), index=False)
+    if output_string is not None:
+        output_df.to_csv('%s_results.csv' % (output_string,), index=False)
+
+    # Calculate threshold for desired precision
+    output_threshold = None
+    if desired_precision is not None:
+        output_threshold = 1
+        precision, recall, thresholds = precision_recall_curve(Y_targets, Y_avg_proba)
+        for i in range(len(thresholds)):
+            if precision[i] >= desired_precision:
+                output_threshold = thresholds[i]
+                break
 
     # Generate ROC curve
     def get_ROC(Y_targets, Y_proba):
@@ -309,58 +357,62 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test"):
             auc = 0
         return fpr, tpr, auc
 
-    fpr, tpr, auc = get_ROC(Y_targets, Y_avg_proba)
-    plt.step(fpr, tpr, where='post', label='(AUC=%.2f)' % (auc,))
-    plt.xlabel('False positive rate')
-    plt.ylabel('True positive rate')
-    plt.title('ROC curve (based on ranking mean pred on each viral species)')
-    plt.legend(loc='upper left', fontsize=7, bbox_to_anchor=(1.05, 1))
-    plt.savefig("%s_ROC.jpg" % (output_string,), dpi=400, bbox_inches="tight")
-    plt.clf()
+    # Save model eval output
+    if output_string is not None:
+        fpr, tpr, auc = get_ROC(Y_targets, Y_avg_proba)
+        plt.step(fpr, tpr, where='post', label='(AUC=%.2f)' % (auc,))
+        plt.xlabel('False positive rate')
+        plt.ylabel('True positive rate')
+        plt.title('ROC curve (based on ranking mean pred on each viral species)')
+        plt.legend(loc='upper left', fontsize=7, bbox_to_anchor=(1.05, 1))
+        plt.savefig("%s_ROC.jpg" % (output_string,), dpi=400, bbox_inches="tight")
+        plt.clf()
 
-    # Violin plot
-    fig, ax = plt.subplots()
-    parts = plt.violinplot(Y_pred_lists, vert=False, widths=0.9)
+        # Violin plot
+        fig, ax = plt.subplots()
+        parts = plt.violinplot(Y_pred_lists, vert=False, widths=0.9)
 
-    # Set human-infecting violins to red color
-    for i, violin in enumerate(parts['bodies']):
-        if Y_targets[i] == 1:
-            violin.set_facecolor('red')
-            #violin.set_edgecolor('red')
+        # Set human-infecting violins to red color
+        for i, violin in enumerate(parts['bodies']):
+            if Y_targets[i] == 1:
+                violin.set_facecolor('red')
+                #violin.set_edgecolor('red')
 
-    # Set lines to red color
-    cbars_color = parts['cbars'].get_color()[0]
+        # Set lines to red color
+        cbars_color = parts['cbars'].get_color()[0]
 
-    colors = []
-    for i in range(len(Y_targets)):
-        if Y_targets[i] == 1:
-            colors.append(np.array(to_rgba('red')))
-        else:
-            colors.append(cbars_color)
-    parts['cbars'].set_color(colors)
-    parts['cmaxes'].set_color(colors)
-    parts['cmins'].set_color(colors)
+        colors = []
+        for i in range(len(Y_targets)):
+            if Y_targets[i] == 1:
+                colors.append(np.array(to_rgba('red')))
+            else:
+                colors.append(cbars_color)
+        parts['cbars'].set_color(colors)
+        parts['cmaxes'].set_color(colors)
+        parts['cmins'].set_color(colors)
 
-    # Label y axis
-    ax.yaxis.set_tick_params(direction='out')
-    ax.set_yticks(np.arange(1, len(Y_species) + 1), labels=Y_species)
-    ax.set_ylim(0.25, len(Y_species) + 0.75)
-    ax.set_ylabel('Virus species')
+        # Label y axis
+        ax.yaxis.set_tick_params(direction='out')
+        ax.set_yticks(np.arange(1, len(Y_species) + 1), labels=Y_species)
+        ax.set_ylim(0.25, len(Y_species) + 0.75)
+        ax.set_ylabel('Virus species')
 
-    # Other plot setup
-    ax.set_xlabel('Model prediction')
-    ax.set_title('Predictions on each holdout set')
-    ax.yaxis.grid(linewidth=1, linestyle='--')
+        # Other plot setup
+        ax.set_xlabel('Model prediction')
+        ax.set_title('Predictions on each holdout set')
+        ax.yaxis.grid(linewidth=1, linestyle='--')
 
-    # Legend
-    red_patch = mpatches.Patch(color='red', alpha=0.3, label='Human-infecting')
-    blue_patch = mpatches.Patch(color='blue', alpha=0.3, label='Non-human-infecting')
-    plt.legend(handles=[red_patch, blue_patch], loc='upper left', fontsize=12, bbox_to_anchor=(1.05, 1))
+        # Legend
+        red_patch = mpatches.Patch(color='red', alpha=0.3, label='Human-infecting')
+        blue_patch = mpatches.Patch(color='blue', alpha=0.3, label='Non-human-infecting')
+        plt.legend(handles=[red_patch, blue_patch], loc='upper left', fontsize=12, bbox_to_anchor=(1.05, 1))
 
-    # Save plot
-    fig.set_size_inches(13, 12)
-    fig.savefig("%s_preds.jpg" % (output_string,), dpi=600, bbox_inches="tight")
-    plt.clf()
+        # Save plot
+        fig.set_size_inches(13, 12)
+        fig.savefig("%s_preds.jpg" % (output_string,), dpi=600, bbox_inches="tight")
+        plt.clf()
+
+    return output_threshold
 
 def species_aware_CV(model_initializer, X, y, species, human_virus_species_list, epochs=1, output_string="test", remove_duplicate_species=False):
     """
