@@ -118,7 +118,7 @@ def get_data(list_of_sequences, label_type, representation_type=None):
         if representation_type is None:
             list_of_encoded_sequences.append(entry.encoded)
         else:
-            seq = Sequence(entry.encoded)
+            seq = Sequence(entry.encoded, n_characters=25)
             list_of_encoded_sequences.append(seq.get_encoding(representation_type))
         if label_type == "by_species":
             list_of_targets.append(entry.target)
