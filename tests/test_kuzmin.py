@@ -33,7 +33,7 @@ def test_kuzmin():
 
 def test_kuzmin2():
     """
-    Compare legacy load with load that performs encoding from the Sequence class
+    Compare legacy load with load that performs encoding from the Sequence class.
     """
     # Legacy
     start_time = datetime.datetime.now()

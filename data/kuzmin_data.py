@@ -161,7 +161,7 @@ def load_kuzmin_data(representation_type=None):
     Main function for loading the dataset of Kuzmin et al.
 
     Input:
-        representation_type (default: None, i.e. one-hot) - type of encoded representation to return
+        representation_type (default: None, ie. one-hot) - type of encoded representation to return
 
     Returns the following objects. The first four are parallel lists:
         X - encoded sequences, dataset shape (1238, 2396, n_char)
