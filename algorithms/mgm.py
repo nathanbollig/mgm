@@ -53,6 +53,7 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
     pos_to_change = None
     current_char_idx = None
     new_char_idx = None
+    objective_values_hx = []  # for debugging
 
     for i in range(seq.n_positions):
         a = a_vector[i]
@@ -84,6 +85,9 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
             # Sum over positions
             objective_value = np.sum(objective_array)
 
+            # Cache objective values for debugging
+            objective_values_hx.append(objective_value)
+
             # Update if new minimum was found
             if min_objective_value is None:
                 min_objective_value = objective_value
@@ -106,4 +110,5 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
     data['current_char_idx'] = current_char_idx
     data['new_char_idx'] = new_char_idx
 
+    del objective_values_hx  # used for debugging
     return seq, data

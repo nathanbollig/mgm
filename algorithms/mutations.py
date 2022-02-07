@@ -70,7 +70,7 @@ def variants(seq, model=None, N=10, confidence_threshold = 0.5, type='hotflip', 
 
     return variant_list
 
-def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False, fixed_iterations=None, loss=None):
+def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False, fixed_iterations=50, loss=None):
     """
     Iterate substitution mutations, using the designated selection strategy, until the predicted class label flips
     and the resulting prediction has confidence >= confidence_threshold. Apply to one sequence object.
