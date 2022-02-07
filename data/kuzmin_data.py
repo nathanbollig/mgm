@@ -20,6 +20,9 @@ from sklearn.model_selection import GroupKFold, LeaveOneOut
 from sklearn.utils import shuffle
 import pandas as pd
 from mgm.common.utils import get_full_path
+
+from common.sequence import Sequence
+
 input_file_name = get_full_path("data", "kuzmin.fasta")
 
 human_virus_species_set = {'Human_coronavirus_NL63', 'Betacoronavirus_1',
@@ -102,7 +105,7 @@ def read_fasta(input_file_name):
     return deflines, protein_sequences, targets
 
 
-def get_data(list_of_sequences, label_type):
+def get_data(list_of_sequences, label_type, representation_type=None):
     """
     Iterate through a list of fasta_sequence objects and retrieve lists of encoded sequences, targets, and species
 
@@ -112,7 +115,11 @@ def get_data(list_of_sequences, label_type):
     list_of_targets = []
     list_of_species = []
     for entry in list_of_sequences:
-        list_of_encoded_sequences.append(entry.encoded)
+        if representation_type is None:
+            list_of_encoded_sequences.append(entry.encoded)
+        else:
+            seq = Sequence(entry.encoded)
+            list_of_encoded_sequences.append(seq.get_encoding(representation_type))
         if label_type == "by_species":
             list_of_targets.append(entry.target)
         if label_type == "by_host":
@@ -154,7 +161,7 @@ def index_sets(human_virus_species_list, species):
 
     return sp
 
-def load_kuzmin_data(label_type="by_species"):
+def load_kuzmin_data(label_type="by_species", representation_type=None):
     """
     Main function for loading the dataset of Kuzmin et al.
 
@@ -180,7 +187,7 @@ def load_kuzmin_data(label_type="by_species"):
         sequences.append(seq)
 
     # Get data from sequence objects
-    X, y, species = get_data(sequences, label_type=label_type)
+    X, y, species = get_data(sequences, label_type=label_type, representation_type=representation_type)
 
     # Convert data to numpy arrays and set shape
     N_POS = 2396
