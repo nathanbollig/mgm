@@ -4,6 +4,8 @@ Training only for 1 epoch with large batch size to increase training speed.
 
 Takes ~ 7 min
 """
+import datetime
+
 from mgm.common.utils import set_data_directory
 from mgm.data.kuzmin_data import load_kuzmin_data, species_aware_CV, LOOCV
 from mgm.models.NN import make_LSTM, make_CNN
@@ -29,6 +31,26 @@ def test_kuzmin():
     #species_aware_CV(model_initializer, X, y, species, human_virus_species_list, epochs=10, output_string="test00", remove_duplicate_species=True)
     LOOCV(model_initializer, X, y, species, epochs=5, output_string="test")
 
+def test_kuzmin2():
+    """
+    Compare legacy load with load that performs encoding from the Sequence class
+    """
+    # Legacy
+    start_time = datetime.datetime.now()
+    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    time_end = datetime.datetime.now()
+    time_seconds = (time_end - start_time).total_seconds()
+    print("Legacy load took %.3f seconds" % (time_seconds,))
+
+    # New load
+    start_time = datetime.datetime.now()
+    X2, y2, species2, deflines2, sequences2, sp2, human_virus_species_list2 = load_kuzmin_data(representation_type='one-hot')
+    time_end = datetime.datetime.now()
+    time_seconds = (time_end - start_time).total_seconds()
+    print("Legacy load took %.3f seconds" % (time_seconds,))
+
+    assert(1==0)
+
 if __name__ == "__main__":
-    set_data_directory("test_kuzmin4")
-    test_kuzmin()
+    set_data_directory("test_kuzmin_legacy_new")
+    test_kuzmin2()

@@ -20,6 +20,9 @@ from sklearn.model_selection import GroupKFold, LeaveOneOut
 from sklearn.utils import shuffle
 import pandas as pd
 from mgm.common.utils import get_full_path
+
+from common.sequence import Sequence
+
 input_file_name = get_full_path("data", "kuzmin.fasta")
 
 human_virus_species_set = {'Human_coronavirus_NL63', 'Betacoronavirus_1',
@@ -102,7 +105,7 @@ def read_fasta(input_file_name):
     return deflines, protein_sequences, targets
 
 
-def get_data(list_of_sequences):
+def get_data(list_of_sequences, representation_type=None):
     """
     Iterate through a list of fasta_sequence objects and retrieve lists of encoded sequences, targets, and species
     """
@@ -110,7 +113,12 @@ def get_data(list_of_sequences):
     list_of_targets = []
     list_of_species = []
     for entry in list_of_sequences:
-        list_of_encoded_sequences.append(entry.encoded)
+        # Legacy behavior
+        if representation_type is None:
+            list_of_encoded_sequences.append(entry.encoded)
+        else:
+            seq = Sequence(entry.encoded)
+            list_of_encoded_sequences.append(seq.get_encoding(representation_type))
         list_of_targets.append(entry.target)
         list_of_species.append(entry.virus_species)
 
@@ -148,12 +156,15 @@ def index_sets(human_virus_species_list, species):
 
     return sp
 
-def load_kuzmin_data():
+def load_kuzmin_data(representation_type=None):
     """
     Main function for loading the dataset of Kuzmin et al.
 
+    Input:
+        representation_type (default: None, i.e. one-hot) - type of encoded representation to return
+
     Returns the following objects. The first four are parallel lists:
-        X - one-hot encoded sequences, dataset shape (1238, 2396, 25)
+        X - encoded sequences, dataset shape (1238, 2396, n_char)
         y - 1d int array (of 0s and 1s) of length 1238
         species - 1d string array of species labels of length 1238
         deflines - list of deflines of length 1238
@@ -171,7 +182,7 @@ def load_kuzmin_data():
         sequences.append(seq)
 
     # Get data from sequence objects
-    X, y, species = get_data(sequences)
+    X, y, species = get_data(sequences, representation_type = representation_type)
 
     # Convert data to numpy arrays and set shape
     N_POS = 2396
