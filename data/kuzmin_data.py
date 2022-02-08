@@ -105,20 +105,25 @@ def read_fasta(input_file_name):
     return deflines, protein_sequences, targets
 
 
-def get_data(list_of_sequences, label_type, representation_type=None):
+def get_data(list_of_sequences, label_type, representation_type="one-hot"):
     """
     Iterate through a list of fasta_sequence objects and retrieve lists of encoded sequences, targets, and species
 
     The definition of binary target is determined by the label_type.
     """
+    N_POS = 2396
+    N_CHAR = 25
+
     list_of_encoded_sequences = []
     list_of_targets = []
     list_of_species = []
     for entry in list_of_sequences:
-        if representation_type is None:
-            list_of_encoded_sequences.append(entry.encoded)
+        legacy_encoding = entry.encoded
+        if representation_type is "legacy":
+            list_of_encoded_sequences.append(legacy_encoding)
         else:
-            seq = Sequence(entry.encoded, n_characters=25)
+            legacy_one_hot = np.array(legacy_encoding).reshape((N_POS, N_CHAR))
+            seq = Sequence(legacy_one_hot, n_characters=25, aa_vocab=aa_vocab)
             list_of_encoded_sequences.append(seq.get_encoding(representation_type))
         if label_type == "by_species":
             list_of_targets.append(entry.target)
@@ -167,6 +172,7 @@ def load_kuzmin_data(label_type="by_species", representation_type=None):
 
     Input:
         label_type - "by_species" (+ if virus species infects human) or "by_host" (+ if isolated from human host)
+        representation_type (default: None, i.e. one-hot) - "one-hot", "kidera", etc.
 
     Returns the following objects. The first four are parallel lists:
         X - one-hot encoded sequences, dataset shape (1238, 2396, 25)
@@ -187,11 +193,18 @@ def load_kuzmin_data(label_type="by_species", representation_type=None):
         sequences.append(seq)
 
     # Get data from sequence objects
+    if representation_type is None:
+        representation_type = 'one-hot'
+
     X, y, species = get_data(sequences, label_type=label_type, representation_type=representation_type)
 
     # Convert data to numpy arrays and set shape
     N_POS = 2396
-    N_CHAR = 25
+    if representation_type == "legacy" or representation_type == "one-hot":
+        N_CHAR = 25
+    elif representation_type=="kidera":
+        N_CHAR = 10
+
     X = np.array(X).reshape((-1, N_POS, N_CHAR))
     y = np.array(y)
     species = np.array(species)

@@ -107,9 +107,17 @@ class Sequence:
             if n_positions != None:
                 if x.shape[0] != n_positions:
                     raise ValueError(
-                        "n_positions does not match length of x, which is inferred to be an integer-encoded list.")
+                        "n_positions does not match length of x, which is inferred to be one-hot encoded.")
             else:
                 self.n_positions = x.shape[0]
+
+            # Infer n_characters
+            if n_characters != None:
+                if x.shape[2] != n_characters:
+                    raise ValueError(
+                        "n_characters does not match shape of x, which is inferred to be one-hot encoded.")
+            else:
+                self.n_positions = x.shape[1]
 
             # Store integer-encoded sequence
             self.integer_encoded = decode_from_one_hot(x, n_positions=self.n_positions, n_characters=self.n_characters)

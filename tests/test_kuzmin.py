@@ -37,19 +37,20 @@ def test_kuzmin2():
     """
     # Legacy
     start_time = datetime.datetime.now()
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data(representation_type='legacy')
     time_end = datetime.datetime.now()
     time_seconds = (time_end - start_time).total_seconds()
-    print("Legacy load took %.3f seconds" % (time_seconds,))
+    print("Legacy load took %.1f seconds" % (time_seconds,))
 
     # New load
     start_time = datetime.datetime.now()
-    X2, y2, species2, deflines2, sequences2, sp2, human_virus_species_list2 = load_kuzmin_data(representation_type='one-hot')
+    X2, y2, species2, deflines2, sequences2, sp2, human_virus_species_list2 = load_kuzmin_data()
     time_end = datetime.datetime.now()
     time_seconds = (time_end - start_time).total_seconds()
-    print("Legacy load took %.3f seconds" % (time_seconds,))
+    print("New load took %.1f seconds" % (time_seconds,))
 
-    assert(1==0)
+    assert(np.isclose(np.mean(X), np.mean(X2)))
+    assert (np.isclose(np.mean(y), np.mean(y2)))
 
 if __name__ == "__main__":
     set_data_directory("test_kuzmin_legacy_new")
