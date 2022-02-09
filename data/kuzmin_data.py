@@ -117,14 +117,16 @@ def get_data(list_of_sequences, label_type, representation_type="one-hot"):
     list_of_encoded_sequences = []
     list_of_targets = []
     list_of_species = []
+    list_of_seq = []
     for entry in list_of_sequences:
         legacy_encoding = entry.encoded
-        if representation_type is "legacy":
+        if representation_type == "legacy":
             list_of_encoded_sequences.append(legacy_encoding)
         else:
             legacy_one_hot = np.array(legacy_encoding).reshape((N_POS, N_CHAR))
             seq = Sequence(legacy_one_hot, n_characters=25, aa_vocab=aa_vocab)
             list_of_encoded_sequences.append(seq.get_encoding(representation_type))
+            list_of_seq.append(seq)
         if label_type == "by_species":
             list_of_targets.append(entry.target)
         if label_type == "by_host":
@@ -132,7 +134,7 @@ def get_data(list_of_sequences, label_type, representation_type="one-hot"):
             list_of_targets.append(label)
         list_of_species.append(entry.virus_species)
 
-    return list_of_encoded_sequences, list_of_targets, list_of_species
+    return list_of_encoded_sequences, list_of_targets, list_of_species, list_of_seq
 
 
 def index_sets(human_virus_species_list, species):
@@ -182,6 +184,7 @@ def load_kuzmin_data(label_type="by_species", representation_type=None):
         sequences - list of fasta_sequence objects of length 1238
         sp - index set dictionary as returned by all_species_index_sets()
         human_virus_species_list - list of human infecting species labels (indices are keys in `sp`)
+        seqs - list of Sequence objects of length 1238
     """
     # Read fasta file
     deflines, protein_sequences, targets = read_fasta(input_file_name)
@@ -196,7 +199,7 @@ def load_kuzmin_data(label_type="by_species", representation_type=None):
     if representation_type is None:
         representation_type = 'one-hot'
 
-    X, y, species = get_data(sequences, label_type=label_type, representation_type=representation_type)
+    X, y, species, seqs = get_data(sequences, label_type=label_type, representation_type=representation_type)
 
     # Convert data to numpy arrays and set shape
     N_POS = 2396
@@ -215,7 +218,7 @@ def load_kuzmin_data(label_type="by_species", representation_type=None):
     # Get index sets
     sp = all_species_index_sets(species)
 
-    return X, y, species, deflines, sequences, sp, human_virus_species_list
+    return X, y, species, deflines, sequences, sp, human_virus_species_list, seqs
 
 ########################################################################################################################
 # Evaluation code written for models using this data

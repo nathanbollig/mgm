@@ -18,7 +18,7 @@ def exp1():
     Run HotFlip-inspired MGM on a sequence.
     """
     # Load Data
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
     n_positions = X.shape[1]
     n_characters = X.shape[2]
     assert(n_positions == 2396)
@@ -53,7 +53,7 @@ def exp2():
     Run MGM-d on a sequence in one-hot encoding.
     """
     # Load Data
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
     n_positions = X.shape[1]
     n_characters = X.shape[2]
     assert (n_positions == 2396)
@@ -96,7 +96,7 @@ def exp3(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initial
     NUM_NEGATIVES_WITHHELD = 60
 
     # Load Data
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
     n = X.shape[0]
     n_positions = X.shape[1]
     n_characters = X.shape[2]
@@ -163,7 +163,7 @@ def exp4():
     model_initializer = make_LSTM
 
     # Load Data
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
     n = X.shape[0]
     n_positions = X.shape[1]
     n_characters = X.shape[2]

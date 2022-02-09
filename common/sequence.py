@@ -99,7 +99,7 @@ class Sequence:
             self.one_hot_encoded = encode_as_one_hot(x, n_positions=self.n_positions, n_characters=self.n_characters)
 
         # CASE: x is a 2d array (assume one-hot-encoded)
-        if isinstance(x, np.ndarray) and len(x.shape) == 2:
+        if isinstance(x, np.ndarray) and len(x.shape) == 2 and x.shape[1] == n_characters:
             # Store as one-hot sequence
             self.one_hot_encoded = x
 
@@ -110,14 +110,6 @@ class Sequence:
                         "n_positions does not match length of x, which is inferred to be one-hot encoded.")
             else:
                 self.n_positions = x.shape[0]
-
-            # Infer n_characters
-            if n_characters != None:
-                if x.shape[2] != n_characters:
-                    raise ValueError(
-                        "n_characters does not match shape of x, which is inferred to be one-hot encoded.")
-            else:
-                self.n_positions = x.shape[1]
 
             # Store integer-encoded sequence
             self.integer_encoded = decode_from_one_hot(x, n_positions=self.n_positions, n_characters=self.n_characters)
@@ -151,7 +143,7 @@ class Sequence:
 
                 R_kidera.append(vector)
 
-            self.representation_space['kidera'] = np.array(R_kidera)
+            self.representation_space['kidera'] = np.array(R_kidera).astype(np.float32)
 
     def get_encoding(self, type):
         """
@@ -176,7 +168,7 @@ class Sequence:
         if representation == 'one_hot':
             return self.one_hot_encoded.reshape(1, self.n_positions, self.n_characters)
         else:
-            return None
+            return self.get_encoding(representation).reshape(1, self.n_positions, -1)
 
     def __len__(self):
         return self.n_positions

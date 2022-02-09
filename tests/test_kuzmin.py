@@ -15,7 +15,7 @@ import numpy as np
 
 def test_kuzmin():
     # Run data load
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
 
     # Test sp structure
     n = 0
@@ -37,14 +37,14 @@ def test_kuzmin2():
     """
     # Legacy
     start_time = datetime.datetime.now()
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data(representation_type='legacy')
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data(representation_type='legacy')
     time_end = datetime.datetime.now()
     time_seconds = (time_end - start_time).total_seconds()
     print("Legacy load took %.1f seconds" % (time_seconds,))
 
     # New load
     start_time = datetime.datetime.now()
-    X2, y2, species2, deflines2, sequences2, sp2, human_virus_species_list2 = load_kuzmin_data()
+    X2, y2, species2, deflines2, sequences2, sp2, human_virus_species_list2, seqs2 = load_kuzmin_data()
     time_end = datetime.datetime.now()
     time_seconds = (time_end - start_time).total_seconds()
     print("New load took %.1f seconds" % (time_seconds,))

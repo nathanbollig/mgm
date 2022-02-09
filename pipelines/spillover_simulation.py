@@ -31,7 +31,7 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
     """
 
     # Load Data
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
     n = X.shape[0]
     n_positions = X.shape[1]
     n_characters = X.shape[2]

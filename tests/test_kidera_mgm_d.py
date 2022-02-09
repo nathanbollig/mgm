@@ -8,7 +8,7 @@ import numpy as np
 
 def test_kidera_mgm_d():
     # Load data with kidera representation
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data(representation_type='kidera')
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data(representation_type='kidera')
 
     # Train model on kidera representation
     n_positions = X.shape[1]
@@ -28,9 +28,8 @@ def test_kidera_mgm_d():
     model = make_LSTM(X_train, y_train, N_POS=n_positions)
     model.fit(X_train, y_train, epochs=2)
 
-    # Create a Sequence object
-    x = X[i]
-    seq = Sequence(x, y[i], n_characters=n_characters, n_positions=n_positions)
+    # Retreive Sequence object
+    seq = seqs[i]
 
     # Run mgm-d with kidera-encoded sequences and corresponding model
     seq_mgm_d, data_mgm_d = mgm_d(seq.copy(), seq, model=model, representation='kidera', cost_function='squared_difference', lambda_param=1)

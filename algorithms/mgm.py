@@ -46,7 +46,7 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
     R = seq.representation_space[representation]
 
     # Get gradient
-    output = compute_gradient(seq, model, loss=loss)
+    output = compute_gradient(seq, model, representation=representation, loss=loss)
 
     # Find character flip that maximizes objective function
     min_objective_value = None

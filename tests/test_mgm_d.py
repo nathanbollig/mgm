@@ -9,7 +9,7 @@ from mgm.models.NN import make_LSTM, make_CNN
 import numpy as np
 
 # Load Data
-X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
 n_positions = X.shape[1]
 n_characters = X.shape[2]
 assert (n_positions == 2396)

@@ -10,12 +10,12 @@ import numpy as np
 
 def test_kuzmin_labeling():
     # Run data load with original labeling scheme
-    X, y, species, deflines, sequences, sp, human_virus_species_list = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
     model_initializer = make_CNN
     LOOCV(model_initializer, X, y, species, epochs=5, output_string="test")
 
     # Run data load with original labeling scheme
-    X2, y2, species2, deflines2, sequences2, sp2, human_virus_species_list2 = load_kuzmin_data(label_type="by_host")
+    X2, y2, species2, deflines2, sequences2, sp2, human_virus_species_list2, seqs = load_kuzmin_data(label_type="by_host")
     model_initializer = make_CNN
     LOOCV(model_initializer, X2, y2, species2, epochs=5, output_string="test2")
 
