@@ -123,19 +123,20 @@ class Sequence:
 
         # Set kidera representation space
         if aa_vocab is not None:
-            map_attribute = get_kidera_factors()
+            map_attribute = get_kidera_factors()  # Get Kidera representations from Ze
+            non_ambiguous_chars = ['A', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'K', 'L', 'M', 'N', 'P', 'Q', 'R', 'S', 'T',
+                                   'V', 'W', 'Y']
             R_kidera = []
             for char in aa_vocab:
                 if char == 'X':
-                    non_ambiguous_chars = ['A','C','D','E','F','G','H','I','K','L','M','N','P','Q','R','S','T','V','W','Y']
                     vals = [map_attribute[c] for c in non_ambiguous_chars]
                     vector = sum(vals) / len(vals)
                 elif char == 'Z':
-                    vector = (map_attribute['E'] + map_attribute['Q']) / 2.0
+                    vector = (map_attribute['E'] + map_attribute['Q']) / 2.0  # glutamate or glutamine
                 elif char == 'B':
-                    vector = (map_attribute['D'] + map_attribute['N']) / 2.0
+                    vector = (map_attribute['D'] + map_attribute['N']) / 2.0  # aspartate or asparagine
                 elif char == 'J':
-                    vector = (map_attribute['L'] + map_attribute['I']) / 2.0
+                    vector = (map_attribute['L'] + map_attribute['I']) / 2.0  # leucine or isoleucine
                 elif char == 'U':
                     vector = map_attribute['C']  # Treat selenocysteine as cysteine
                 else:
