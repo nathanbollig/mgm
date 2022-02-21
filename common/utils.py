@@ -24,7 +24,8 @@ def set_data_directory(dirname):
     """
     data_path = os.path.join(os.path.dirname(get_full_path()), "data")
     data_directory = os.path.join(data_path, dirname)
-    os.mkdir(data_directory)
+    if not os.path.isdir(data_directory):
+        os.mkdir(data_directory)
     os.chdir(data_directory)
     return
 
