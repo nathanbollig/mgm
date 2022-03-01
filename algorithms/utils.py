@@ -16,7 +16,8 @@ def compute_gradient(seq, model, representation='one-hot', loss=True):
         loss - If true, the gradient is model loss wrt inputs. If false, the gradient is model output wrt inputs.
     """
     # Compute gradients
-    input = tf.Variable(seq.to_predict(representation))
+    input_dtype = model.dtype
+    input = tf.Variable(seq.to_predict(representation), dtype=getattr(tf,input_dtype))
     with tf.GradientTape() as tape:
         prediction = model(input, training=False)  # Logits for this minibatch
         target = tf.constant(0.0)

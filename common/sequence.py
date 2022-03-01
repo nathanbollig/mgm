@@ -184,6 +184,13 @@ class Sequence:
             generator= self.generator.copy()
 
         new = Sequence(x=x, y=self.y, aa_vocab=aa_vocab, n_positions=self.n_positions, n_characters=self.n_characters, generator=generator)
+
+        if hasattr(self, 'species'):
+            new.set_species(self.species)
+
+        if hasattr(self, 'defline'):
+            new.set_defline(self.defline)
+
         return new
 
     def get_hash_of_sub(self, pos_to_change, new_char_idx):
@@ -193,3 +200,21 @@ class Sequence:
 
     def get_hash(self):
         return compute_hash(self.integer_encoded)
+
+    def set_species(self, species):
+        self.species = species
+
+    def get_species(self):
+        if hasattr(self, 'species'):
+            return self.species
+        else:
+            return None
+
+    def set_defline(self, defline):
+        self.defline = defline
+
+    def get_defline(self):
+        if hasattr(self, 'defline'):
+            return self.defline
+        else:
+            return None

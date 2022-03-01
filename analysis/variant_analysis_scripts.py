@@ -3,11 +3,13 @@ from mgm.common.utils import set_data_directory
 import matplotlib.pyplot as plt
 
 # Set directory to where results are
-set_data_directory("spillover_simulation5")
+set_data_directory("spillover_simulation8")
 
 # Load variants
 with open(r"variants.pkl", "rb") as f:
     variants = pickle.load(f)
+
+
 
 # Pull out thresholds and auc for each method
 thresh_avg_species = []

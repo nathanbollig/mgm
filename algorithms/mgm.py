@@ -89,9 +89,7 @@ def mgm_d(seq, init_seq, model=None, representation='one-hot', cost_function='sq
             objective_values_hx.append(objective_value)
 
             # Update if new minimum was found
-            if min_objective_value is None:
-                min_objective_value = objective_value
-            elif objective_value < min_objective_value:
+            if min_objective_value is None or objective_value < min_objective_value:
                 if hashes is not None and seq.get_hash_of_sub(i, b) in hashes:
                     continue  # don't accept mutation that has been seen before
                 min_objective_value = objective_value

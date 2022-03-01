@@ -21,7 +21,7 @@ from sklearn.utils import shuffle
 import pandas as pd
 from mgm.common.utils import get_full_path
 
-from common.sequence import Sequence
+from mgm.common.sequence import Sequence
 
 input_file_name = get_full_path("data", "kuzmin.fasta")
 
@@ -244,7 +244,7 @@ def all_species_index_sets(species):
 
     return species_index
 
-def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desired_precision=None):
+def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desired_precision=None, threshold_only=False, avg_within_species=True):
     """
     Takes in a model initializer and kuzmin data, applies leave-one-out CV (wrt viral species) to determine model performance and threshold for desired precision.
 
@@ -261,6 +261,8 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desi
         X, y, species - data, labels, and a parallel list of species
         desired_precision - determines deserved level of model precision for the computed prediction threshold
         output_string - file prefix; if None, no files are saved
+        threshold_only - don't save model performance output, just return threshold (default: )
+        avg_within_species - generate results based on pooling of predictions within each species group (default: True)
 
     Output:
         Saves data files and images for model evaluation
@@ -280,6 +282,8 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desi
 
     output = []
     i = 0
+
+    # Set up lists for results pooled by viral species
     Y_avg_proba = []
     Y_pred_lists = []
     Y_targets = []
@@ -355,87 +359,158 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desi
 
         i += 1
 
-    # Save fold summary
-    output_df = pd.DataFrame(output, columns=['fold', 'species', 'target_label', 'test_size', 'mean_pred', 'pred_list'])
-    print(output_df)
-    if output_string is not None:
-        output_df.to_csv('%s_results.csv' % (output_string,), index=False)
 
-    # Calculate threshold for desired precision
-    output_threshold = None
-    if desired_precision is not None:
-        output_threshold = 1
-        precision, recall, thresholds = precision_recall_curve(Y_targets, Y_avg_proba)
-        for i in range(len(thresholds)):
-            if precision[i] >= desired_precision:
-                output_threshold = thresholds[i]
-                break
+    # Lists for all sequences
+    targets_all_seq = []
+    preds_all_seq = []
+    target_species_all_seq = []
+    for i, t in enumerate(Y_targets):
+        pred_list = Y_pred_lists[i]
+        n = len(pred_list)
+        targets_all_seq.extend([t] * n)
+        preds_all_seq.extend(pred_list)
+        target_species_all_seq.extend([Y_species[i]] * n)
 
-    # Generate ROC curve
-    def get_ROC(Y_targets, Y_proba):
-        fpr, tpr, _ = roc_curve(Y_targets, Y_proba)
-        try:
-            auc = roc_auc_score(Y_targets, Y_proba)
-        except ValueError:
-            auc = 0
-        return fpr, tpr, auc
+    # Compute threshold
+    threshold_based_on_all_seq = compute_threshold(targets_all_seq, preds_all_seq, desired_precision=desired_precision)
+    threshold_based_on_avg_within_species = compute_threshold(Y_targets, Y_avg_proba, desired_precision=desired_precision)
 
-    # Save model eval output
-    if output_string is not None:
-        fpr, tpr, auc = get_ROC(Y_targets, Y_avg_proba)
-        plt.step(fpr, tpr, where='post', label='(AUC=%.2f)' % (auc,))
-        plt.xlabel('False positive rate')
-        plt.ylabel('True positive rate')
-        plt.title('ROC curve (based on ranking mean pred on each viral species)')
-        plt.legend(loc='upper left', fontsize=7, bbox_to_anchor=(1.05, 1))
-        plt.savefig("%s_ROC.jpg" % (output_string,), dpi=400, bbox_inches="tight")
-        plt.clf()
+    # Select data to use for ROC analysis and threshold to report
+    if avg_within_species:
+        targets = Y_targets
+        preds = Y_avg_proba
+        target_species = Y_species
+        output_threshold = threshold_based_on_avg_within_species
+    else:
+        targets = targets_all_seq
+        preds = preds_all_seq
+        target_species = target_species_all_seq
+        output_threshold = threshold_based_on_all_seq
 
-        # Violin plot
-        fig, ax = plt.subplots()
-        parts = plt.violinplot(Y_pred_lists, vert=False, widths=0.9)
+    # Cache supplemental data
+    data = {}
+    data['threshold_based_on_avg_within_species'] = threshold_based_on_avg_within_species
+    data['threshold_based_on_all_seq'] = threshold_based_on_all_seq
+    data['output_threshold'] = output_threshold
+    data['avg_within_species'] = avg_within_species
+    data['desired_precision'] = desired_precision
+    data['threshold_only'] = threshold_only
 
-        # Set human-infecting violins to red color
-        for i, violin in enumerate(parts['bodies']):
-            if Y_targets[i] == 1:
-                violin.set_facecolor('red')
-                #violin.set_edgecolor('red')
+    # Evaluation of model performance
+    if threshold_only is False:
 
-        # Set lines to red color
-        cbars_color = parts['cbars'].get_color()[0]
+        # Save fold summary
+        output_df = pd.DataFrame(output, columns=['fold', 'species', 'target_label', 'test_size', 'mean_pred', 'pred_list'])
+        print(output_df)
+        if output_string is not None:
+            output_df.to_csv('%s_results.csv' % (output_string,), index=False)
 
-        colors = []
-        for i in range(len(Y_targets)):
-            if Y_targets[i] == 1:
-                colors.append(np.array(to_rgba('red')))
+        # Generate ROC curve
+        def get_ROC(targets, preds):
+            fpr, tpr, _ = roc_curve(targets, preds)
+            try:
+                auc = roc_auc_score(targets, preds)
+            except ValueError:
+                auc = 0
+            return fpr, tpr, auc
+
+        # Cache supplemental data
+        data['auc_based_on_avg_within_species'] = get_ROC(Y_targets, Y_avg_proba)[2]
+        data['auc_based_on_all_seq'] = get_ROC(targets_all_seq, preds_all_seq)[2]
+
+        # Save model eval output
+        if output_string is not None:
+            # ROC for both pooling approaches
+            # avg within species
+            fpr, tpr, auc = get_ROC(Y_targets, Y_avg_proba)
+            plt.step(fpr, tpr, where='post', label='Group by species and use mean prediction (AUC=%.2f)' % (auc,))
+
+            # all seq
+            fpr, tpr, auc = get_ROC(targets_all_seq, preds_all_seq)
+            plt.step(fpr, tpr, where='post', label='Use all sequences (AUC=%.2f)' % (auc,))
+
+            plt.xlabel('False positive rate')
+            plt.ylabel('True positive rate')
+            plt.title('ROC curves')
+            plt.legend(loc='upper left', fontsize=7, bbox_to_anchor=(1.05, 1))
+            plt.savefig("%s_ROC_both_pooling_approaches.jpg" % (output_string,), dpi=400, bbox_inches="tight")
+            plt.clf()
+
+            # ROC for selected pooling approach
+            fpr, tpr, auc = get_ROC(targets, preds)
+            plt.step(fpr, tpr, where='post', label='(AUC=%.2f)' % (auc,))
+            plt.xlabel('False positive rate')
+            plt.ylabel('True positive rate')
+            if avg_within_species:
+                plt.title('ROC curve - based on ranking mean pred on each viral species')
             else:
-                colors.append(cbars_color)
-        parts['cbars'].set_color(colors)
-        parts['cmaxes'].set_color(colors)
-        parts['cmins'].set_color(colors)
+                plt.title('ROC curve - based on all sequences')
 
-        # Label y axis
-        ax.yaxis.set_tick_params(direction='out')
-        ax.set_yticks(np.arange(1, len(Y_species) + 1), labels=Y_species)
-        ax.set_ylim(0.25, len(Y_species) + 0.75)
-        ax.set_ylabel('Virus species')
+            plt.legend(loc='upper left', fontsize=7, bbox_to_anchor=(1.05, 1))
+            plt.savefig("%s_ROC.jpg" % (output_string,), dpi=400, bbox_inches="tight")
+            plt.clf()
 
-        # Other plot setup
-        ax.set_xlabel('Model prediction')
-        ax.set_title('Predictions on each holdout set')
-        ax.yaxis.grid(linewidth=1, linestyle='--')
+            # Violin plot
+            fig, ax = plt.subplots()
+            parts = plt.violinplot(Y_pred_lists, vert=False, widths=0.9)
 
-        # Legend
-        red_patch = mpatches.Patch(color='red', alpha=0.3, label='Human-infecting')
-        blue_patch = mpatches.Patch(color='blue', alpha=0.3, label='Non-human-infecting')
-        plt.legend(handles=[red_patch, blue_patch], loc='upper left', fontsize=12, bbox_to_anchor=(1.05, 1))
+            # Set human-infecting violins to red color
+            for i, violin in enumerate(parts['bodies']):
+                if targets[i] == 1:
+                    violin.set_facecolor('red')
+                    #violin.set_edgecolor('red')
 
-        # Save plot
-        fig.set_size_inches(13, 12)
-        fig.savefig("%s_preds.jpg" % (output_string,), dpi=600, bbox_inches="tight")
-        plt.clf()
+            # Set lines to red color
+            cbars_color = parts['cbars'].get_color()[0]
+
+            colors = []
+            for i in range(len(targets)):
+                if targets[i] == 1:
+                    colors.append(np.array(to_rgba('red')))
+                else:
+                    colors.append(cbars_color)
+            parts['cbars'].set_color(colors)
+            parts['cmaxes'].set_color(colors)
+            parts['cmins'].set_color(colors)
+
+            # Label y axis
+            ax.yaxis.set_tick_params(direction='out')
+            ax.set_yticks(np.arange(1, len(target_species) + 1), labels=target_species)
+            ax.set_ylim(0.25, len(target_species) + 0.75)
+            ax.set_ylabel('Virus species')
+
+            # Other plot setup
+            ax.set_xlabel('Model prediction')
+            ax.set_title('Predictions on each holdout set')
+            ax.yaxis.grid(linewidth=1, linestyle='--')
+
+            # Legend
+            red_patch = mpatches.Patch(color='red', alpha=0.3, label='Human-infecting')
+            blue_patch = mpatches.Patch(color='blue', alpha=0.3, label='Non-human-infecting')
+            plt.legend(handles=[red_patch, blue_patch], loc='upper left', fontsize=12, bbox_to_anchor=(1.05, 1))
+
+            # Save plot
+            fig.set_size_inches(13, 12)
+            fig.savefig("%s_preds.jpg" % (output_string,), dpi=600, bbox_inches="tight")
+            plt.clf()
+
+    return output_threshold, data
+
+
+def compute_threshold(targets, preds, desired_precision=None):
+    if desired_precision is None:
+        return None
+
+    output_threshold = 1
+    precision, recall, thresholds = precision_recall_curve(targets, preds)
+    # Scan thresholds from small to large and find first threshold at which precision exceeds desired level
+    for i in range(len(thresholds)):
+        if precision[i] >= desired_precision:
+            output_threshold = thresholds[i]
+            break
 
     return output_threshold
+
 
 def species_aware_CV(model_initializer, X, y, species, human_virus_species_list, epochs=1, output_string="test", remove_duplicate_species=False):
     """
