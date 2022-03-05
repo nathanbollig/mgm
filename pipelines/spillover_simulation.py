@@ -14,10 +14,10 @@ import pickle
 import numpy as np
 import pandas as pd
 
-def spillover_experiment(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=0.9):
+def spillover_experiment(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=0.9, confidence_threshold=None):
     # Load data and get variants
     variants = spillover_get_variants(species_to_withhold = species_to_withhold, validate_model=validate_model,
-                                      model_initializer = model_initializer, desired_precision=desired_precision)
+                                      model_initializer = model_initializer, desired_precision=desired_precision, confidence_threshold=confidence_threshold)
 
     # Run analysis of variants (saves files)
     analyze_variants(variants)
@@ -26,7 +26,7 @@ def spillover_experiment(species_to_withhold = 'SARS_CoV_2', validate_model=Fals
     with open("variants.pkl", 'wb') as file:
         pickle.dump(variants, file, protocol=pickle.HIGHEST_PROTOCOL)
 
-def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=6/7.0):
+def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=6/7.0, confidence_threshold=None):
     """
     Withhold a designated species from the training dataset.
     Iterate on all negative species => select confidence threshold using internal LOOCV, train a model, use model to guide mgm on the negative group
@@ -91,7 +91,7 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
 
         # Run iteration
         new_variants = external_CV_iteration(model_initializer, X_iteration_train, y_iteration_train, species_iteration_train, X_iteration_val, y_iteration_val,
-                                     species_iteration_val, deflines_iteration_val, desired_precision=desired_precision)
+                                     species_iteration_val, deflines_iteration_val, desired_precision=desired_precision, confidence_threshold=confidence_threshold)
         i += 1
         # Store list of variants
         variants.extend(new_variants)
@@ -110,7 +110,7 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
 
     # External Validation - validation fold with simulated precursor sequences
     new_variants = external_CV_iteration(model_initializer, X_train, y_train, species_train, X_withheld, y_withheld,
-                                         species_withheld, deflines_withheld, desired_precision=desired_precision)
+                                         species_withheld, deflines_withheld, desired_precision=desired_precision, confidence_threshold=confidence_threshold)
     variants.extend(new_variants)
 
     # Tests for correctness
@@ -118,7 +118,7 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
 
     return variants
 
-def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_val, y_val, species_val, deflines_val, desired_precision):
+def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_val, y_val, species_val, deflines_val, desired_precision, confidence_threshold):
     """
     Given a training and validation set, use the training set to select a confidence threshold and train a model.
     Use the trained model to guide mgm on the validation set.
@@ -126,7 +126,10 @@ def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_
 
     # Select confidence threshold on training set
     # TODO: set threshold_only to true when done with testing
-    threshold, data = LOOCV(model_initializer, X_train, y_train, species_train, epochs=5, desired_precision=desired_precision, threshold_only=False)
+    if confidence_threshold is not None:
+        threshold = confidence_threshold
+    else:
+        threshold, data = LOOCV(model_initializer, X_train, y_train, species_train, epochs=5, desired_precision=desired_precision, threshold_only=False)
 
 
     # Train a model on full training set

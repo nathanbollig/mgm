@@ -70,7 +70,7 @@ def variants(seq, model=None, N=10, confidence_threshold = 0.5, type='hotflip', 
 
     return variant_list
 
-def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False, fixed_iterations=5, loss=None):
+def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False, fixed_iterations=250, loss=None):
     """
     Iterate substitution mutations, using the designated selection strategy, until the predicted class label flips
     and the resulting prediction has confidence >= confidence_threshold. Apply to one sequence object.
@@ -164,11 +164,14 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
     hx = Variant()
     hx.set_mgm_output(final_seq=seq, substitution_data=data)
     hx.set_init_seq(init_seq=init_seq)
-    hx.set_fields(init_pred=init_pred_proba, confidence_threshold=confidence_threshold, algorithm_type=type) # TODO: pass any additional params passed to parent function
+    hx.set_fields(init_pred=init_pred_proba, confidence_threshold=confidence_threshold, algorithm_type=type, fixed_iterations=fixed_iterations) # TODO: pass any additional params passed to parent function
 
     # Compute variant cost and risk
     hx.compute_cost("num_differences")
-    hx.compute_risk("reciprocate_cost")
+    if hx.variant_cost == "undefined":
+        hx.variant_risk = "undefined"
+    else:
+        hx.compute_risk("reciprocate_cost")
 
     if verbose == True:
         print('')

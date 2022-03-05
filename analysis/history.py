@@ -49,10 +49,13 @@ class Variant:
             setattr(self, key, value)
 
     def compute_cost(self, type):
-        if type=="num_differences":
+        if self.fixed_iterations == len(self.substitution_data):  # The mutation trajectory was truncated by fixed iteration limit
+            self.variant_cost = "undefined"
+            self.variant_cost_type = "n/a"
+        elif type=="num_differences":
             self.variant_cost = num_differences(self.init_seq, self.final_seq)
             self.variant_cost_type = "num_differences"
-        if type=="squared_difference":
+        elif type=="squared_difference":
             self.variant_cost = squared_difference(self.init_seq, self.final_seq)
             self.variant_cost_type = "squared_difference"
 

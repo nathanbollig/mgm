@@ -3,12 +3,28 @@ from mgm.common.utils import set_data_directory
 import matplotlib.pyplot as plt
 
 # Set directory to where results are
-set_data_directory("spillover_simulation8")
+set_data_directory("spillover_simulation9")
 
 # Load variants
 with open(r"variants.pkl", "rb") as f:
     variants = pickle.load(f)
 
+
+# Correction for spillover_simulation9
+for variant in variants:
+    final_pred = variant.substitution_data[-1]['conf']
+    variant.confidence_threshold = 0.95
+    variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
+    variant.compute_cost("num_differences")
+
+def truncate_mutation_trajectory(substitution_data, confidence_threshold):
+    for i, sub_dict in enumerate(substitution_data):
+        if sub_dict['pred_proba'] > confidence_threshold:
+            substitution_data_truncated = substitution_data[:i+1]
+            return substitution_data_truncated
+    return substitution_data
+
+analyze_variants(variants, filename="rankings_corrected.csv")
 
 
 # Pull out thresholds and auc for each method
