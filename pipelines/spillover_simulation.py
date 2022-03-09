@@ -128,6 +128,7 @@ def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_
     # TODO: set threshold_only to true when done with testing
     if confidence_threshold is not None:
         threshold = confidence_threshold
+        data = None
     else:
         threshold, data = LOOCV(model_initializer, X_train, y_train, species_train, epochs=5, desired_precision=desired_precision, threshold_only=False)
 
@@ -150,7 +151,8 @@ def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_
         seq.set_defline(deflines_val[i])
         # Run variant search
         variant = variant_search(seq, model=model, confidence_threshold=threshold, type="mgm-d", verbose=True)
-        variant.set_fields(LOOCV_data = data)
+        if data is not None:
+            variant.set_fields(LOOCV_data = data)
         variants.append(variant)
 
     return variants
