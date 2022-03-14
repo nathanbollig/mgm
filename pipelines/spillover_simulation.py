@@ -19,12 +19,12 @@ def spillover_experiment(species_to_withhold = 'SARS_CoV_2', validate_model=Fals
     variants = spillover_get_variants(species_to_withhold = species_to_withhold, validate_model=validate_model,
                                       model_initializer = model_initializer, desired_precision=desired_precision, confidence_threshold=confidence_threshold)
 
-    # Run analysis of variants (saves files)
-    analyze_variants(variants)
-
     # Save variants
     with open("variants.pkl", 'wb') as file:
         pickle.dump(variants, file, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # Run analysis of variants (saves files)
+    analyze_variants(variants)
 
 def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=6/7.0, confidence_threshold=None):
     """
@@ -172,4 +172,6 @@ def analyze_variants(variants, filename="rankings.csv"):
 
     output_df = pd.DataFrame(rows, columns=cols)
     output_df = output_df.sort_values(by=['Risk score'], ascending=False)
+    output_df['Risk score'] = pd.to_numeric(output_df['Risk score'], errors='coerce')
+    output_df['Risk score'] = output_df['Risk score'].fillna("undefined")
     output_df.to_csv(filename, index=False)
