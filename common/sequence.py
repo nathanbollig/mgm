@@ -27,6 +27,41 @@ def get_kidera_factors():
 
     return map_attribute
 
+def mult_align_idx_to_unaligned_idx(integer_encoded_seq, i):
+    """
+    Input:
+        integer_encoded_seq - 1d array with -1 representing gap
+        i - index in multiple seq alignment
+
+    Output:
+        Index in sequence with gap chars removed
+    """
+    if i >= len(integer_encoded_seq):
+        raise IndexError("Index %i exceeds the length of the input sequence (%s)" % (i, len(integer_encoded_seq)))
+
+    unique, counts = np.unique(integer_encoded_seq[:i+1], return_counts=True)
+    num_gaps = dict(zip(unique, counts)).get(-1)
+    if num_gaps is None:
+        num_gaps = 0
+    return max(0, i - num_gaps)
+
+def unaligned_idx_to_mult_align_idx(integer_encoded_seq, i):
+    """
+    Input:
+        integer_encoded_seq - 1d array with -1 representing gap
+        i - index in sequence with gap characters removed
+
+    Output:
+        Index in mult seq alignment
+    """
+    integer_encoded_seq = np.array(integer_encoded_seq)
+    non_gap_indices = np.nonzero(integer_encoded_seq != -1)[0]
+
+    if i >= len(non_gap_indices):
+        raise IndexError("Index %i exceeds the length of the unaligned input sequence (%s)" % (i, len(non_gap_indices)))
+
+    return non_gap_indices[i]
+
 class Sequence:
     def __init__(self, x, y=None, aa_vocab=None, n_positions=None, n_characters=None, generator=None):
         """
@@ -99,7 +134,7 @@ class Sequence:
             self.one_hot_encoded = encode_as_one_hot(x, n_positions=self.n_positions, n_characters=self.n_characters)
 
         # CASE: x is a 2d array (assume one-hot-encoded)
-        if isinstance(x, np.ndarray) and len(x.shape) == 2 and x.shape[1] == n_characters:
+        if isinstance(x, np.ndarray) and len(x.shape) == 2 and x.shape[1] == self.n_characters:
             # Store as one-hot sequence
             self.one_hot_encoded = x
 

@@ -2,7 +2,7 @@
 Test the Sequence class
 """
 
-from mgm.common.sequence import Sequence
+from mgm.common.sequence import Sequence, mult_align_idx_to_unaligned_idx, unaligned_idx_to_mult_align_idx
 import pytest
 import numpy as np
 import pickle
@@ -128,6 +128,115 @@ def test_sequences():
     char = seq.integer_encoded[i]
     rep = R_kidera[char, :]
     assert(np.all(np.isclose(rep, k[i, :])))
+
+    # Test index conversion methods
+    seq1 = [1, 2, -1, -1, -1, 3, 4, -1, 5, -1, -1, -1, -1, -1]
+
+    assert (mult_align_idx_to_unaligned_idx(seq1, 0) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 1) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 2) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 3) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 4) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 5) == 2)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 6) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 7) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 8) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 9) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 10) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 11) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 12) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq1, 13) == 4)
+    with pytest.raises(IndexError):
+        mult_align_idx_to_unaligned_idx(seq1, 14)
+
+    assert (unaligned_idx_to_mult_align_idx(seq1, 0) == 0)
+    assert (unaligned_idx_to_mult_align_idx(seq1, 1) == 1)
+    assert (unaligned_idx_to_mult_align_idx(seq1, 2) == 5)
+    assert (unaligned_idx_to_mult_align_idx(seq1, 3) == 6)
+    assert (unaligned_idx_to_mult_align_idx(seq1, 4) == 8)
+    with pytest.raises(IndexError):
+        unaligned_idx_to_mult_align_idx(seq1, 5)
+
+    seq2 = [1, 2, -1, -1, -1, 3, 4, -1, 5, -1, -1, -1, -1, 6]
+
+    assert (mult_align_idx_to_unaligned_idx(seq2, 0) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 1) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 2) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 3) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 4) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 5) == 2)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 6) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 7) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 8) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 9) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 10) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 11) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 12) == 4)
+    assert (mult_align_idx_to_unaligned_idx(seq2, 13) == 5)
+    with pytest.raises(IndexError):
+        mult_align_idx_to_unaligned_idx(seq2, 14)
+
+    assert (unaligned_idx_to_mult_align_idx(seq2, 0) == 0)
+    assert (unaligned_idx_to_mult_align_idx(seq2, 1) == 1)
+    assert (unaligned_idx_to_mult_align_idx(seq2, 2) == 5)
+    assert (unaligned_idx_to_mult_align_idx(seq2, 3) == 6)
+    assert (unaligned_idx_to_mult_align_idx(seq2, 4) == 8)
+    assert (unaligned_idx_to_mult_align_idx(seq2, 5) == 13)
+    with pytest.raises(IndexError):
+        unaligned_idx_to_mult_align_idx(seq2, 6)
+
+    seq3 = [-1, 2, -1, -1, -1, 3, 4, -1, 5, -1, -1, -1, -1, -1]
+
+    assert (mult_align_idx_to_unaligned_idx(seq3, 0) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 1) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 2) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 3) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 4) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 5) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 6) == 2)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 7) == 2)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 8) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 9) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 10) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 11) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 12) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq3, 13) == 3)
+    with pytest.raises(IndexError):
+        mult_align_idx_to_unaligned_idx(seq3, 14)
+
+    assert (unaligned_idx_to_mult_align_idx(seq3, 0) == 1)
+    assert (unaligned_idx_to_mult_align_idx(seq3, 1) == 5)
+    assert (unaligned_idx_to_mult_align_idx(seq3, 2) == 6)
+    assert (unaligned_idx_to_mult_align_idx(seq3, 3) == 8)
+    with pytest.raises(IndexError):
+        unaligned_idx_to_mult_align_idx(seq3, 4)
+
+    seq4 = [-1, 2, -1, -1, -1, 3, 4, -1, 5, -1, -1, -1, -1, 6]
+
+    assert (mult_align_idx_to_unaligned_idx(seq4, 0) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 1) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 2) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 3) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 4) == 0)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 5) == 1)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 6) == 2)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 7) == 2)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 8) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 9) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 10) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 11) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 12) == 3)
+    assert (mult_align_idx_to_unaligned_idx(seq4, 13) == 4)
+    with pytest.raises(IndexError):
+        mult_align_idx_to_unaligned_idx(seq4, 14)
+
+    assert (unaligned_idx_to_mult_align_idx(seq4, 0) == 1)
+    assert (unaligned_idx_to_mult_align_idx(seq4, 1) == 5)
+    assert (unaligned_idx_to_mult_align_idx(seq4, 2) == 6)
+    assert (unaligned_idx_to_mult_align_idx(seq4, 3) == 8)
+    assert (unaligned_idx_to_mult_align_idx(seq4, 4) == 13)
+    with pytest.raises(IndexError):
+        unaligned_idx_to_mult_align_idx(seq4, 5)
 
     print("Passed!")
 
