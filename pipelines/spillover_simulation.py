@@ -173,7 +173,7 @@ def analyze_variants(variants, filename="rankings.csv"):
             'Final Pred', 'Threshold', 'defline']
 
     output_df = pd.DataFrame(rows, columns=cols)
-    output_df = output_df.sort_values(by=['Risk score'], ascending=False)
     output_df['Risk score'] = pd.to_numeric(output_df['Risk score'], errors='coerce')
+    output_df = output_df.sort_values(by=['Risk score'], ascending=False)
     output_df['Risk score'] = output_df['Risk score'].fillna("undefined")
     output_df.to_csv(filename, index=False)
