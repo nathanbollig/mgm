@@ -62,6 +62,43 @@ def unaligned_idx_to_mult_align_idx(integer_encoded_seq, i):
 
     return non_gap_indices[i]
 
+# def encoded_to_integer(x, R):
+#     """
+#     Convert an encoded sequence to integer representation.
+#
+#     Inputs:
+#         x - 2D encoded representation or 3D array of encoded representations
+#         R - 2D array of dimension n_characters x representation dimension
+#
+#     e.g. for x a single, Kidera-encoded sequence, it has shape (n_positions, 10) and R would have dimension n_characters x 10
+#
+#     Output:
+#         Returns the integer-encoded representation
+#     """
+#
+#     def vec_to_int(vec, R):
+#         if np.all((vec == 0)):
+#             return -1
+#         else:
+#             return np.where(np.all(R == vec, axis=1))[0].item()  # Fails because assumes rows are unique but C and U are the same (2 and 19 in current aa_vocab)
+#
+#     def encoded_to_int_2d(x, R):
+#         x_int = []
+#         for i in range(x.shape[0]):
+#             vec = x[i]
+#             x_int.append(vec_to_int(vec, R))
+#         return np.array(x_int)
+#
+#     if len(x.shape) == 2:  # single sequence
+#         return encoded_to_int_2d(x, R)
+#
+#     elif len(x.shape) == 3:  # array of sequences
+#         x_int = []
+#         for item in range(x.shape[0]):
+#             x_int.append(encoded_to_int_2d(x[item], R))
+#         return np.array(x_int)
+
+
 class Sequence:
     def __init__(self, x, y=None, aa_vocab=None, n_positions=None, n_characters=None, generator=None):
         """

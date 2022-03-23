@@ -14,10 +14,11 @@ import pickle
 import numpy as np
 import pandas as pd
 
-def spillover_experiment(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=0.9, confidence_threshold=None):
+def spillover_experiment(species_to_withhold = 'SARS_CoV_2', representation='one-hot', validate_model=False, model_initializer = make_LSTM, desired_precision=0.9, confidence_threshold=None, fixed_iterations=250):
     # Load data and get variants
-    variants = spillover_get_variants(species_to_withhold = species_to_withhold, validate_model=validate_model,
-                                      model_initializer = model_initializer, desired_precision=desired_precision, confidence_threshold=confidence_threshold)
+    variants = spillover_get_variants(species_to_withhold = species_to_withhold, representation=representation, validate_model=validate_model,
+                                      model_initializer = model_initializer, desired_precision=desired_precision, confidence_threshold=confidence_threshold,
+                                      fixed_iterations=fixed_iterations)
 
     # Save variants
     with open("variants.pkl", 'wb') as file:
@@ -26,7 +27,7 @@ def spillover_experiment(species_to_withhold = 'SARS_CoV_2', validate_model=Fals
     # Run analysis of variants (saves files)
     analyze_variants(variants)
 
-def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=6/7.0, confidence_threshold=None):
+def spillover_get_variants(representation, fixed_iterations, species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=6/7.0, confidence_threshold=None):
     """
     Withhold a designated species from the training dataset.
     Iterate on all negative species => select confidence threshold using internal LOOCV, train a model, use model to guide mgm on the negative group
@@ -35,7 +36,7 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
     """
 
     # Load Data
-    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data()
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data(representation_type='kidera')
     num_all_species = len(sp.keys())
     n = X.shape[0]
     n_positions = X.shape[1]
@@ -91,7 +92,8 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
 
         # Run iteration
         new_variants = external_CV_iteration(model_initializer, X_iteration_train, y_iteration_train, species_iteration_train, X_iteration_val, y_iteration_val,
-                                     species_iteration_val, deflines_iteration_val, desired_precision=desired_precision, confidence_threshold=confidence_threshold)
+                                            species_iteration_val, deflines_iteration_val, desired_precision=desired_precision,
+                                            confidence_threshold=confidence_threshold, fixed_iterations=fixed_iterations)
         i += 1
         # Store list of variants
         variants.extend(new_variants)
@@ -110,7 +112,8 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
 
     # External Validation - validation fold with simulated precursor sequences
     new_variants = external_CV_iteration(model_initializer, X_train, y_train, species_train, X_withheld, y_withheld,
-                                         species_withheld, deflines_withheld, desired_precision=desired_precision, confidence_threshold=confidence_threshold)
+                                         species_withheld, deflines_withheld, desired_precision=desired_precision,
+                                         confidence_threshold=confidence_threshold, fixed_iterations=fixed_iterations)
     variants.extend(new_variants)
 
     # Tests for correctness
@@ -118,7 +121,7 @@ def spillover_get_variants(species_to_withhold = 'SARS_CoV_2', validate_model=Fa
 
     return variants
 
-def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_val, y_val, species_val, deflines_val, desired_precision, confidence_threshold):
+def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_val, y_val, species_val, deflines_val, desired_precision, confidence_threshold, fixed_iterations):
     """
     Given a training and validation set, use the training set to select a confidence threshold and train a model.
     Use the trained model to guide mgm on the validation set.
@@ -150,7 +153,7 @@ def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_
         seq.set_species(species_val[i])
         seq.set_defline(deflines_val[i])
         # Run variant search
-        variant = variant_search(seq, model=model, confidence_threshold=threshold, type="mgm-d", verbose=True)
+        variant = variant_search(seq, model=model, confidence_threshold=threshold, type="mgm-d", verbose=True, fixed_iterations=fixed_iterations)
         if data is not None:
             variant.set_fields(LOOCV_data = data)
         variants.append(variant)

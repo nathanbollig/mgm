@@ -70,7 +70,7 @@ def variants(seq, model=None, N=10, confidence_threshold = 0.5, type='hotflip', 
 
     return variant_list
 
-def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', weights=None, gamma=0.1, cost=100, verbose=False, fixed_iterations=500, loss=None):
+def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', representation='one-hot', weights=None, gamma=0.1, cost=100, verbose=False, fixed_iterations=500, loss=None):
     """
     Iterate substitution mutations, using the designated selection strategy, until the predicted class label flips
     and the resulting prediction has confidence >= confidence_threshold. Apply to one sequence object.
@@ -81,6 +81,7 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
         model - a TensorFlow Model object
         confidence_threshold - mutation stops when model confidence exceeds this value (default: 0.5)
         type - method to select mutation at each step: 'hotflip', 'lookahead_1', 'mgm-d'
+        representation - Representation type being used ('one-hot', etc. - must be a key in seq.representation_space)
         fixed_iterations - if set to an integer, then stop after that number of iterations
         loss - If true, the gradient is model loss wrt inputs. If false, the gradient is model output wrt inputs.
 
@@ -105,7 +106,7 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
     data = []
     hashes = set()
     init_seq = seq.copy()
-    init_pred_proba = model.predict(seq.to_predict()).item()
+    init_pred_proba = model.predict(seq.to_predict(representation=representation)).item()
     conf = init_pred_proba
     i = 1
 
@@ -120,13 +121,13 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
         if type=='lookahead_1':
             seq, one_flip_data = one_lookahead_flip(seq, model=model, verbose=verbose)
         if type=='mgm-d':
-            seq, one_flip_data = mgm_d(seq, init_seq, model=model, loss=loss, hashes=hashes)
+            seq, one_flip_data = mgm_d(seq, init_seq, model=model, loss=loss, hashes=hashes, representation=representation)
 
         if verbose==True:
             print('.', end='', flush=True) # one dot per character flip
 
         # Apply model to updated sequence
-        pred_proba = model.predict(seq.to_predict()).item()
+        pred_proba = model.predict(seq.to_predict(representation=representation)).item()
         pred = int(pred_proba > 0.5)
 
         # # Compute confidence that class label has been flipped
@@ -164,7 +165,8 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
     hx = Variant()
     hx.set_mgm_output(final_seq=seq, substitution_data=data)
     hx.set_init_seq(init_seq=init_seq)
-    hx.set_fields(init_pred=init_pred_proba, confidence_threshold=confidence_threshold, algorithm_type=type, fixed_iterations=fixed_iterations) # TODO: pass any additional params passed to parent function
+    hx.set_fields(init_pred=init_pred_proba, confidence_threshold=confidence_threshold, algorithm_type=type,
+                  fixed_iterations=fixed_iterations, representation=representation) # TODO: pass any additional params passed to parent function
 
     # Compute variant cost and risk
     hx.compute_cost("num_differences")
