@@ -10,7 +10,7 @@ import numpy as np
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-data_dir = "spillover_simulation9"
+data_dir = "spillover_simulation_MERS"
 SPILL_SEQ_DEFLINE = 'RaTG13|QHR63300|Bat|SARS_CoV_2'
 SPILL_SEQ_PRETTY = 'RaTG13'
 WITHHELD_SPECIES = 'SARS_CoV_2'
@@ -38,7 +38,7 @@ for variant in variants:
     variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
     variant.compute_cost("num_differences")
 
-#analyze_variants(variants, filename="rankings_corrected.csv")
+#analyze_variants(variants, filename="rankings_corrected2.csv")
 
 # Pull out thresholds and auc for each method
 thresh_avg_species = []

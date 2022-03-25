@@ -6,6 +6,7 @@ This code is designed and tested for data in the format delivered by load_kuzmin
 
 from mgm.algorithms.mutations import variant_search, variants
 from mgm.analysis.risk_assessment import risk_of_variant
+from mgm.common.cost_functions import num_differences
 from mgm.common.sequence import Sequence
 from mgm.data.kuzmin_data import load_kuzmin_data, species_aware_CV, LOOCV, all_species_index_sets
 from mgm.common.utils import set_data_directory
@@ -168,11 +169,11 @@ def analyze_variants(variants, filename="rankings.csv"):
             final_pred = variant.substitution_data[-1]['conf']
         else:
             final_pred = variant.init_pred
-        row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type,
+        row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type, num_differences(variant.init_seq, variant.final_seq),
                variant.init_seq.get_species(), variant.init_seq.y, variant.init_pred, final_pred, variant.confidence_threshold, variant.init_seq.get_defline())
         rows.append(row)
 
-    cols = ['Risk score', 'Risk score type', 'Cost', 'Cost type', 'Species', 'Initial label', 'Initial pred',
+    cols = ['Risk score', 'Risk score type', 'Cost', 'Cost type', 'Num Differences', 'Species', 'Initial label', 'Initial pred',
             'Final Pred', 'Threshold', 'defline']
 
     output_df = pd.DataFrame(rows, columns=cols)
