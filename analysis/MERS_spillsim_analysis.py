@@ -2,19 +2,23 @@ import pickle
 
 import pandas as pd
 
+from mgm.analysis.SARSCoV2_spillsim_analysis import rankings_spill_seq
 from mgm.common.sequence import unaligned_idx_to_mult_align_idx
 from mgm.common.utils import set_data_directory
 import matplotlib.pyplot as plt
 import numpy as np
+from mgm.pipelines.spillover_simulation import analyze_variants
 
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-data_dir = "spillover_simulation_MERS"
+
+data_dir = "spillover_simulation_MERS_kidera_250"
 SPILL_SEQ_DEFLINE = 'Hu/Taif/KSA_7032/2014/S530del|AMQ49004|Human|Middle_East_respiratory_syndrome_coronavirus'
 SPILL_SEQ_PRETTY = 'Representative MERS'
 WITHHELD_SPECIES = 'Middle_East_respiratory_syndrome_coronavirus'
 WITHHELD_SPECIES_PRETTY = 'MERS'
+rankings_path = 'rankings_corrected_thres_9.csv'
 ########################################################################################################################
 
 # Set directory to where results are
@@ -24,21 +28,21 @@ set_data_directory(data_dir)
 with open(r"variants.pkl", "rb") as f:
     variants = pickle.load(f)
 
-# # Correction for spillover_simulation9
-# def truncate_mutation_trajectory(substitution_data, confidence_threshold):
-#     for i, sub_dict in enumerate(substitution_data):
-#         if sub_dict['pred_proba'] > confidence_threshold:
-#             substitution_data_truncated = substitution_data[:i+1]
-#             return substitution_data_truncated
-#     return substitution_data
-#
-# for variant in variants:
-#     final_pred = variant.substitution_data[-1]['conf']
-#     variant.confidence_threshold = 0.95
-#     variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
-#     variant.compute_cost("num_differences")
+# Correction for spillover_simulation9
+def truncate_mutation_trajectory(substitution_data, confidence_threshold):
+    for i, sub_dict in enumerate(substitution_data):
+        if sub_dict['pred_proba'] > confidence_threshold:
+            substitution_data_truncated = substitution_data[:i+1]
+            return substitution_data_truncated
+    return substitution_data
 
-#analyze_variants(variants, filename="rankings_corrected.csv")
+for variant in variants:
+    final_pred = variant.substitution_data[-1]['conf']
+    variant.confidence_threshold = 0.09
+    variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
+    variant.compute_cost("num_differences")
+
+analyze_variants(variants, filename="rankings_corrected_thres_9.csv")
 
 # # Pull out thresholds and auc for each method
 # thresh_avg_species = []
@@ -150,31 +154,41 @@ if WITHHELD_SPECIES = 'SARS_CoV_2':
     SARSCoV2_endpoints(variants)
 
 # Comparison of rankings by MGM vs init model pred - 2D
-rankings = pd.read_csv('rankings.csv')
-rankings = rankings.loc[rankings['Cost'] != 'undefined']
+# Read in rankings
+rankings = pd.read_csv(rankings_path)
+# Compute number of sequences that have a cost, i.e. are "ranked"
+n_ranked = len(rankings.loc[rankings['Cost'] != 'undefined'])
+# Sort by cost, putting undefined at the bottom
+rankings['Cost'] = pd.to_numeric(rankings['Cost'], errors='coerce')
+rankings.sort_values(by=['Cost'], inplace=True)
+rankings['Cost'] = rankings['Cost'].fillna("undefined")
+# Assign rank column as sorted by cost
 rankings['MGM_rank'] = range(1, len(rankings) + 1)
+rankings['MGM_rank'].loc[rankings['Cost'] == 'undefined'] = n_ranked + 1
+# Sort by initial pred and assign rank column as sorted by initial pred
 rankings = rankings.sort_values(by=['Initial pred'], ascending=False)
 rankings['model_rank'] = range(1, len(rankings) + 1)
+# Compute and assign rank change
 rankings['rank_change'] = rankings['model_rank'] - rankings['MGM_rank']
-rankings.to_csv('rankings_corrected_with_ranks.csv')
+# Save updated rankings
+rankings.to_csv('rankings_corrected_with_ranks_9.csv')
 
 rankings1 = rankings.loc[rankings['Species'] == WITHHELD_SPECIES]
 rankings0 = rankings.loc[rankings['Species'] != WITHHELD_SPECIES]
-rankings_spill_seq = rankings.loc[rankings['defline'] == SPILL_SEQ_DEFLINE]
+#rankings_spill_seq = rankings.loc[rankings['defline'] == SPILL_SEQ_DEFLINE]
 
 plt.clf()
 plt.scatter(rankings1['model_rank'], rankings1['MGM_rank'], s=50, facecolors='none', edgecolors='r', label=WITHHELD_SPECIES_PRETTY)
-plt.scatter(rankings0['model_rank'], rankings0['MGM_rank'], s=50, facecolors='none', edgecolors='b', label='Other groups')
-plt.scatter(rankings_spill_seq['model_rank'], rankings_spill_seq['MGM_rank'], s=15, facecolors='black', edgecolors='black', marker="*", label=SPILL_SEQ_PRETTY)
+plt.scatter(rankings0['model_rank'], rankings0['MGM_rank'], s=50, facecolors='none', edgecolors='b', label='Other groups', alpha=0.7)
+#plt.scatter(rankings_spill_seq['model_rank'], rankings_spill_seq['MGM_rank'], s=15, facecolors='black', edgecolors='black', marker="*", label=SPILL_SEQ_PRETTY)
 plt.xlabel('Risk ranking by initial model score')
 plt.ylabel('Risk ranking by MGM-d')
 plt.legend(bbox_to_anchor=(1.04,1), loc="upper left", fontsize='small')
 plt.title('Comparison of ranking methods')
-m = len(rankings)+1
-plt.xlim(1,m)
-plt.ylim(1,m)
-plt.plot([1, m], [1, m], color = 'black', linewidth = 0.5, linestyle='--')
-plt.savefig('rank_scatter.jpg', dpi=400, bbox_inches="tight")
+plt.xlim(1,n_ranked)
+plt.ylim(1,n_ranked)
+plt.plot([1, n_ranked], [1, n_ranked], color = 'black', linewidth = 0.5, linestyle='--')
+plt.savefig('rank_scatter_9.jpg', dpi=400, bbox_inches="tight")
 
 # As above, ranking change in 1D
 plt.clf()
@@ -188,12 +202,12 @@ bins = np.linspace(lower_limit, upper_limit, 50)
 plt.axvline(x=0, linestyle="--", color="black")
 plt.hist(change0, bins, density=False, facecolor='b', edgecolor='k', alpha=0.8, label='Other groups')
 plt.hist(change1, bins, density=False, facecolor='r', edgecolor='k', alpha=0.8, label=WITHHELD_SPECIES_PRETTY)
-plt.scatter(x=spill_seq_profit, y = 1, marker="*", label="RaTG13", linestyle="--", color="black")
+#plt.scatter(x=spill_seq_profit, y = 1, marker="*", label="RaTG13", linestyle="--", color="black")
 
 plt.xlabel('Relative increase in ranking via MGM')
 plt.ylabel('Count')
 handles, labels = plt.gca().get_legend_handles_labels()
-order = [1,0,2]
+order = [1,0]
 plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order])
 plt.title('Ranking change relative to ranking by model score')
 plt.savefig('rank_change_distribution.jpg', dpi=400)

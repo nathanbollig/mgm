@@ -10,11 +10,12 @@ import numpy as np
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-data_dir = "spillover_simulation_MERS"
+data_dir = "spillover_simulation9"
 SPILL_SEQ_DEFLINE = 'RaTG13|QHR63300|Bat|SARS_CoV_2'
 SPILL_SEQ_PRETTY = 'RaTG13'
 WITHHELD_SPECIES = 'SARS_CoV_2'
 WITHHELD_SPECIES_PRETTY = 'SARS CoV 2'
+rankings_path = 'rankings_corrected.csv'
 ########################################################################################################################
 
 # Set directory to where results are
@@ -150,13 +151,24 @@ if WITHHELD_SPECIES = 'SARS_CoV_2':
     SARSCoV2_endpoints(variants)
 
 # Comparison of rankings by MGM vs init model pred - 2D
-rankings = pd.read_csv('rankings_corrected.csv')
-rankings = rankings.loc[rankings['Cost'] != 'undefined']
+# Read in rankings
+rankings = pd.read_csv(rankings_path)
+# Compute number of sequences that have a cost, i.e. are "ranked"
+n_ranked = len(rankings.loc[rankings['Cost'] != 'undefined'])
+# Sort by cost, putting undefined at the bottom
+rankings['Cost'] = pd.to_numeric(rankings['Cost'], errors='coerce')
+rankings.sort_values(by=['Cost'], inplace=True)
+rankings['Cost'] = rankings['Cost'].fillna("undefined")
+# Assign rank column as sorted by cost
 rankings['MGM_rank'] = range(1, len(rankings) + 1)
+rankings['MGM_rank'].loc[rankings['Cost'] == 'undefined'] = n_ranked + 1
+# Sort by initial pred and assign rank column as sorted by initial pred
 rankings = rankings.sort_values(by=['Initial pred'], ascending=False)
 rankings['model_rank'] = range(1, len(rankings) + 1)
+# Compute and assign rank change
 rankings['rank_change'] = rankings['model_rank'] - rankings['MGM_rank']
-rankings.to_csv('rankings_corrected_with_ranks.csv')
+# Save updated rankings
+rankings.to_csv('rankings_corrected_with_ranksnew.csv')
 
 rankings1 = rankings.loc[rankings['Species'] == WITHHELD_SPECIES]
 rankings0 = rankings.loc[rankings['Species'] != WITHHELD_SPECIES]
@@ -171,10 +183,10 @@ plt.ylabel('Risk ranking by MGM-d')
 plt.legend(bbox_to_anchor=(1.04,1), loc="upper left", fontsize='small')
 plt.title('Comparison of ranking methods')
 m = len(rankings)+1
-plt.xlim(1,m)
-plt.ylim(1,m)
-plt.plot([1, m], [1, m], color = 'black', linewidth = 0.5, linestyle='--')
-plt.savefig('rank_scatter.jpg', dpi=400, bbox_inches="tight")
+plt.xlim(1,n_ranked)
+plt.ylim(1,n_ranked)
+plt.plot([1, n_ranked], [1, n_ranked], color = 'black', linewidth = 0.5, linestyle='--')
+plt.savefig('rank_scatternew.jpg', dpi=400, bbox_inches="tight")
 
 # As above, ranking change in 1D
 plt.clf()
