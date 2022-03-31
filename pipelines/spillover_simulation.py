@@ -37,7 +37,7 @@ def spillover_get_variants(representation, fixed_iterations, species_to_withhold
     """
 
     # Load Data
-    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data(representation_type='kidera')
+    X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data(representation_type=representation)
     num_all_species = len(sp.keys())
     n = X.shape[0]
     n_positions = X.shape[1]
@@ -161,19 +161,38 @@ def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_
 
     return variants
 
+def diff_from_nearest(seq, reference_seqs):
+    """
+    Given an input Sequence, find the distance to the closest member of a list of reference Sequences. Difference
+    is number of amino acid differences.
+    """
+    min_diff = None
+    for ref in reference_seqs:
+        diff = num_differences(seq, ref)
+        if min_diff is None or diff < min_diff:
+            min_diff = diff
+
+    return min_diff
+
 def analyze_variants(variants, filename="rankings.csv"):
+    # Recapitulate withheld group
+    withheld_seqs = []
+    for variant in variants:
+        if variant.init_seq.y == 1:
+            withheld_seqs.append(variant.init_seq)
+
     # Rank by risk score
     rows = []
     for i, variant in enumerate(variants):
         if len(variant.substitution_data) > 0:
-            final_pred = variant.substitution_data[-1]['conf']
+            final_pred = variant.get_final_pred()
         else:
             final_pred = variant.init_pred
-        row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type, num_differences(variant.init_seq, variant.final_seq),
+        row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type, num_differences(variant.init_seq, variant.final_seq), diff_from_nearest(variant.init_seq, withheld_seqs),
                variant.init_seq.get_species(), variant.init_seq.y, variant.init_pred, final_pred, variant.confidence_threshold, variant.init_seq.get_defline())
         rows.append(row)
 
-    cols = ['Risk score', 'Risk score type', 'Cost', 'Cost type', 'Num Differences', 'Species', 'Initial label', 'Initial pred',
+    cols = ['Risk score', 'Risk score type', 'Cost', 'Cost type', 'Num Differences', 'Diff to Closest Positive', 'Species', 'Initial label', 'Initial pred',
             'Final Pred', 'Threshold', 'defline']
 
     output_df = pd.DataFrame(rows, columns=cols)
@@ -181,3 +200,21 @@ def analyze_variants(variants, filename="rankings.csv"):
     output_df = output_df.sort_values(by=['Risk score'], ascending=False)
     output_df['Risk score'] = output_df['Risk score'].fillna("undefined")
     output_df.to_csv(filename, index=False)
+
+
+def reanalyze_variants(variants, THRESHOLD, rankings_path, keep_final_seq=False):
+    def truncate_mutation_trajectory(substitution_data, confidence_threshold):
+        for i, sub_dict in enumerate(substitution_data):
+            if sub_dict['pred_proba'] > confidence_threshold:
+                substitution_data_truncated = substitution_data[:i+1]
+                return substitution_data_truncated
+        return substitution_data
+
+    for variant in variants:
+        variant.confidence_threshold = THRESHOLD
+        variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
+        if not keep_final_seq:
+            variant.final_seq = variant.replay_trajectory()
+        variant.compute_cost("num_differences")
+
+    analyze_variants(variants, filename=rankings_path)

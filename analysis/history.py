@@ -83,6 +83,17 @@ class Variant:
 
         return True
 
+    def get_final_pred(self):
+        return self.substitution_data[-1]['conf']
+
+    def replay_trajectory(self):
+        seq = self.init_seq.copy()
+        for data in self.substitution_data:
+            i = data['pos_to_change']
+            b = data['new_char_idx']
+            seq.sub(i, b)
+        return seq
+
 class VariantList:
     def __init__(self):
         self.variants = []

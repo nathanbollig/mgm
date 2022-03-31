@@ -7,7 +7,7 @@ from mgm.common.sequence import unaligned_idx_to_mult_align_idx
 from mgm.common.utils import set_data_directory
 import matplotlib.pyplot as plt
 import numpy as np
-from mgm.pipelines.spillover_simulation import analyze_variants
+from mgm.pipelines.spillover_simulation import analyze_variants, reanalyze_variants
 
 ########################################################################################################################
 # Set analysis parameters
@@ -16,6 +16,7 @@ data_dir = "spillover_simulation_MERS_kidera_250"
 WITHHELD_SPECIES = 'Middle_East_respiratory_syndrome_coronavirus'
 WITHHELD_SPECIES_PRETTY = 'MERS'
 THRESHOLD = 0.04
+keep_final_seq = False
 ########################################################################################################################
 
 if THRESHOLD is None:
@@ -26,6 +27,9 @@ else:
 
 rankings_path = 'rankings%s.csv' % (suffix,)
 
+if keep_final_seq == True:
+    suffix = suffix + "_keepfinal"
+
 # Set directory to where results are
 set_data_directory(data_dir)
 
@@ -34,21 +38,7 @@ with open(r"variants.pkl", "rb") as f:
     variants = pickle.load(f)
 
 if THRESHOLD is not None:
-    # Correction for spillover_simulation9
-    def truncate_mutation_trajectory(substitution_data, confidence_threshold):
-        for i, sub_dict in enumerate(substitution_data):
-            if sub_dict['pred_proba'] > confidence_threshold:
-                substitution_data_truncated = substitution_data[:i+1]
-                return substitution_data_truncated
-        return substitution_data
-
-    for variant in variants:
-        final_pred = variant.substitution_data[-1]['conf']
-        variant.confidence_threshold = THRESHOLD
-        variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
-        variant.compute_cost("num_differences")
-
-    analyze_variants(variants, filename=rankings_path)
+    reanalyze_variants(variants, THRESHOLD, rankings_path, keep_final_seq=keep_final_seq)
 
 # # Pull out thresholds and auc for each method
 # thresh_avg_species = []
