@@ -12,14 +12,19 @@ from mgm.pipelines.spillover_simulation import analyze_variants
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-
 data_dir = "spillover_simulation_MERS_kidera_250"
-SPILL_SEQ_DEFLINE = 'Hu/Taif/KSA_7032/2014/S530del|AMQ49004|Human|Middle_East_respiratory_syndrome_coronavirus'
-SPILL_SEQ_PRETTY = 'Representative MERS'
 WITHHELD_SPECIES = 'Middle_East_respiratory_syndrome_coronavirus'
 WITHHELD_SPECIES_PRETTY = 'MERS'
-rankings_path = 'rankings_corrected_thres_9.csv'
+THRESHOLD = 0.04
 ########################################################################################################################
+
+if THRESHOLD is None:
+    suffix = ''
+else:
+    assert (THRESHOLD <= 1)
+    suffix = '_' + str(int(THRESHOLD * 100))
+
+rankings_path = 'rankings%s.csv' % (suffix,)
 
 # Set directory to where results are
 set_data_directory(data_dir)
@@ -28,21 +33,22 @@ set_data_directory(data_dir)
 with open(r"variants.pkl", "rb") as f:
     variants = pickle.load(f)
 
-# Correction for spillover_simulation9
-def truncate_mutation_trajectory(substitution_data, confidence_threshold):
-    for i, sub_dict in enumerate(substitution_data):
-        if sub_dict['pred_proba'] > confidence_threshold:
-            substitution_data_truncated = substitution_data[:i+1]
-            return substitution_data_truncated
-    return substitution_data
+if THRESHOLD is not None:
+    # Correction for spillover_simulation9
+    def truncate_mutation_trajectory(substitution_data, confidence_threshold):
+        for i, sub_dict in enumerate(substitution_data):
+            if sub_dict['pred_proba'] > confidence_threshold:
+                substitution_data_truncated = substitution_data[:i+1]
+                return substitution_data_truncated
+        return substitution_data
 
-for variant in variants:
-    final_pred = variant.substitution_data[-1]['conf']
-    variant.confidence_threshold = 0.09
-    variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
-    variant.compute_cost("num_differences")
+    for variant in variants:
+        final_pred = variant.substitution_data[-1]['conf']
+        variant.confidence_threshold = THRESHOLD
+        variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
+        variant.compute_cost("num_differences")
 
-analyze_variants(variants, filename="rankings_corrected_thres_9.csv")
+    analyze_variants(variants, filename=rankings_path)
 
 # # Pull out thresholds and auc for each method
 # thresh_avg_species = []
@@ -87,18 +93,15 @@ def get_positions(variants, confidence_threshold=0.95):
             for i, sub_dict in enumerate(variant.substitution_data):
                 if sub_dict['pred_proba'] <= confidence_threshold:
                     index = sub_dict['pos_to_change']
-                    if variant.init_seq.defline == SPILL_SEQ_DEFLINE:
-                        spill_seq_positions.add(index)
-                    else:
-                        position_set.add(index)
+                    position_set.add(index)
         positions.extend(list(position_set))
-    return positions, list(spill_seq_positions)
+    return positions
 
-positions95, spill_seq_positions95 = get_positions(variants, confidence_threshold=0.95)
-positions90, spill_seq_positions90 = get_positions(variants, confidence_threshold=0.90)
-positions85, spill_seq_positions85 = get_positions(variants, confidence_threshold=0.85)
-positions80, spill_seq_positions80 = get_positions(variants, confidence_threshold=0.80)
-positions75, spill_seq_positions75 = get_positions(variants, confidence_threshold=0.75)
+positions95 = get_positions(variants, confidence_threshold=0.95)
+positions90 = get_positions(variants, confidence_threshold=0.90)
+positions85 = get_positions(variants, confidence_threshold=0.85)
+positions80 = get_positions(variants, confidence_threshold=0.80)
+positions75 = get_positions(variants, confidence_threshold=0.75)
 
 plt.clf()
 bins = np.linspace(0, 2396, 90)
@@ -108,50 +111,9 @@ _, _, patches = plt.hist(positions75, bins, density=False, facecolor='r', edgeco
 plt.xlabel('Position')
 plt.ylabel('Count')
 
-spill_seq_positions_bins = np.digitize(spill_seq_positions75, bins)
-for i, bin_idx in enumerate(spill_seq_positions_bins):
-    # patches[i].set_linestyle('--')
-    # patches[i].set_linewidth(1.5)
-    # patches[i].set_edgecolor('black')
-    patch = patches[bin_idx]
-    x_center = patch.get_x() + 0.5 * patch.get_width()
-    #plt.scatter(x=x_center, y=3, marker="*", linestyle="--", color="black", label="%s at conf=.75" % (SPILL_SEQ_PRETTY,) if i==0 else "")
-
 plt.legend(fontsize='small')
 plt.title('Mutations suggested in %s' % (WITHHELD_SPECIES_PRETTY,))
-plt.savefig('distribution.jpg', dpi=400)
-
-# Finding regions
-def SARSCoV2_endpoints(variants):
-    # First get representative variant
-    for i,variant in enumerate(variants):
-        if variant.init_seq.defline == SPILL_SEQ_DEFLINE:
-            idx = i
-    # Then use it to get desired cutoffs
-    """
-    Li, Fang, et al. "Structure of SARS coronavirus spike receptor-binding domain complexed with receptor." Science 309.5742 (2005): 1864-1868.
-    +
-    https://www.nature.com/articles/nrmicro2090
-    """
-    seq = variants[idx].init_seq.integer_encoded
-    def get_endpoints(a, b):
-        return unaligned_idx_to_mult_align_idx(seq, a), unaligned_idx_to_mult_align_idx(seq, b)
-
-    endpoints = {}
-    endpoints['SP'] = get_endpoints(1, 13)
-    endpoints['S1'] = get_endpoints(13, 770)
-    endpoints['S2'] = get_endpoints(667, 1190)
-    endpoints['RBD'] = get_endpoints(318, 510)
-    endpoints['RBM'] = get_endpoints(424, 494)
-    endpoints['FP'] = get_endpoints(770, 788)
-    endpoints['HR1'] = get_endpoints(892, 1013)
-    endpoints['HR2'] = get_endpoints(1145, 1195)
-    endpoints['TM'] = get_endpoints(1195, 1215)
-    endpoints['CP'] = get_endpoints(1215, 1255)
-    pd.DataFrame(endpoints).to_csv("motif_endpoints.csv")
-
-if WITHHELD_SPECIES = 'SARS_CoV_2':
-    SARSCoV2_endpoints(variants)
+plt.savefig('distribution%s.jpg'% (suffix,), dpi=400)
 
 # Comparison of rankings by MGM vs init model pred - 2D
 # Read in rankings
@@ -164,14 +126,14 @@ rankings.sort_values(by=['Cost'], inplace=True)
 rankings['Cost'] = rankings['Cost'].fillna("undefined")
 # Assign rank column as sorted by cost
 rankings['MGM_rank'] = range(1, len(rankings) + 1)
-rankings['MGM_rank'].loc[rankings['Cost'] == 'undefined'] = n_ranked + 1
+rankings['MGM_rank'].loc[rankings['Cost'] == 'undefined'] = len(rankings) + 1
 # Sort by initial pred and assign rank column as sorted by initial pred
 rankings = rankings.sort_values(by=['Initial pred'], ascending=False)
 rankings['model_rank'] = range(1, len(rankings) + 1)
 # Compute and assign rank change
 rankings['rank_change'] = rankings['model_rank'] - rankings['MGM_rank']
 # Save updated rankings
-rankings.to_csv('rankings_corrected_with_ranks_9.csv')
+rankings.to_csv('rankings_corrected_with_ranks%s.csv' % (suffix,))
 
 rankings1 = rankings.loc[rankings['Species'] == WITHHELD_SPECIES]
 rankings0 = rankings.loc[rankings['Species'] != WITHHELD_SPECIES]
@@ -188,7 +150,7 @@ plt.title('Comparison of ranking methods')
 plt.xlim(1,n_ranked)
 plt.ylim(1,n_ranked)
 plt.plot([1, n_ranked], [1, n_ranked], color = 'black', linewidth = 0.5, linestyle='--')
-plt.savefig('rank_scatter_9.jpg', dpi=400, bbox_inches="tight")
+plt.savefig('rank_scatter%s.jpg' % (suffix,), dpi=400, bbox_inches="tight")
 
 # As above, ranking change in 1D
 plt.clf()
@@ -210,7 +172,7 @@ handles, labels = plt.gca().get_legend_handles_labels()
 order = [1,0]
 plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order])
 plt.title('Ranking change relative to ranking by model score')
-plt.savefig('rank_change_distribution.jpg', dpi=400)
+plt.savefig('rank_change_distribution%s.jpg' % (suffix,), dpi=400)
 
 
 
