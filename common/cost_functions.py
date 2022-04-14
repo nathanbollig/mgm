@@ -6,10 +6,9 @@ import numpy as np
 
 def squared_difference(seq1, seq2, representation = 'one-hot'):
     assert (len(seq1) == len(seq2))
-    if representation == 'one-hot':
-        x1 = seq1.one_hot_encoded
-        x2 = seq2.one_hot_encoded
-        return 0.5 * np.linalg.norm(x1-x2, ord='fro')**2
+    x1 = seq1.get_encoding(representation)
+    x2 = seq2.get_encoding(representation)
+    return 0.5 * np.linalg.norm(x1-x2, ord='fro')**2
 
 def num_differences(seq1, seq2):
     assert(len(seq1) == len(seq2))

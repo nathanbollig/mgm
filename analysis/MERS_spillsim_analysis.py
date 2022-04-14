@@ -3,6 +3,7 @@ import pickle
 import pandas as pd
 
 from mgm.analysis.SARSCoV2_spillsim_analysis import rankings_spill_seq
+from mgm.analysis.trajectory_analysis import conf_vs_change_number
 from mgm.common.sequence import unaligned_idx_to_mult_align_idx
 from mgm.common.utils import set_data_directory
 import matplotlib.pyplot as plt
@@ -12,7 +13,7 @@ from mgm.pipelines.spillover_simulation import analyze_variants, reanalyze_varia
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-data_dir = "spillover_simulation_MERS_kidera_250"
+data_dir = "spillover_simulation_MERS"
 WITHHELD_SPECIES = 'Middle_East_respiratory_syndrome_coronavirus'
 WITHHELD_SPECIES_PRETTY = 'MERS'
 THRESHOLD = 0.04
@@ -36,6 +37,9 @@ set_data_directory(data_dir)
 # Load variants
 with open(r"variants.pkl", "rb") as f:
     variants = pickle.load(f)
+
+# Make confidence trajectories
+conf_vs_change_number(variants)
 
 if THRESHOLD is not None:
     reanalyze_variants(variants, THRESHOLD, rankings_path, keep_final_seq=keep_final_seq)

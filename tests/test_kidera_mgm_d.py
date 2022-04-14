@@ -61,5 +61,5 @@ def test_kidera_mgm_d():
     print("Passed!")
 
 if __name__ == "__main__":
-    set_data_directory("test_kidera2")
+    set_data_directory("test_kidera3")
     test_kidera_mgm_d()

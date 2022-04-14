@@ -215,6 +215,6 @@ def reanalyze_variants(variants, THRESHOLD, rankings_path, keep_final_seq=False)
         variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
         if not keep_final_seq:
             variant.final_seq = variant.replay_trajectory()
-        variant.compute_cost("num_differences")
+        variant.compute_cost()
 
     analyze_variants(variants, filename=rankings_path)

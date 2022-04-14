@@ -48,7 +48,7 @@ class Variant:
         for key,value in kwargs.items():
             setattr(self, key, value)
 
-    def compute_cost(self, type):
+    def compute_cost(self, type="squared_difference"):
         if self.fixed_iterations == len(self.substitution_data):  # The mutation trajectory was truncated by fixed iteration limit
             self.variant_cost = "undefined"
             self.variant_cost_type = "n/a"
@@ -56,7 +56,7 @@ class Variant:
             self.variant_cost = num_differences(self.init_seq, self.final_seq)
             self.variant_cost_type = "num_differences"
         elif type=="squared_difference":
-            self.variant_cost = squared_difference(self.init_seq, self.final_seq)
+            self.variant_cost = squared_difference(self.init_seq, self.final_seq, representation=variant.representation)
             self.variant_cost_type = "squared_difference"
 
         return self.variant_cost

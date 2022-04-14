@@ -12,6 +12,7 @@ Functions to perform model-guided mutation to a sequence. The They will have the
 """
 import mgm
 from mgm.analysis.history import Variant, VariantList
+from mgm.common.cost_functions import squared_difference
 from mgm.common.utils import decode_from_one_hot, encode_as_one_hot
 from mgm.common.sequence import Sequence
 from mgm.algorithms.hotflip import one_hotflip
@@ -142,6 +143,7 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
         # Store values in flip data dictionary
         one_flip_data['pred_proba'] = pred_proba
         one_flip_data['conf'] = conf
+        one_flip_data['cost'] = squared_difference(seq, init_seq, representation=representation)
         one_flip_data['change_number'] = i
         one_flip_data['time_sec'] = (datetime.datetime.now() - time_start).total_seconds()
         if seq.generator != None:
@@ -169,7 +171,7 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
                   fixed_iterations=fixed_iterations, representation=representation) # TODO: pass any additional params passed to parent function
 
     # Compute variant cost and risk
-    hx.compute_cost("num_differences")
+    hx.compute_cost(representation=representation)
     if hx.variant_cost == "undefined":
         hx.variant_risk = "undefined"
     else:
