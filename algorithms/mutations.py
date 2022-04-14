@@ -171,7 +171,7 @@ def variant_search(seq, model=None, confidence_threshold = 0.5, type='hotflip', 
                   fixed_iterations=fixed_iterations, representation=representation) # TODO: pass any additional params passed to parent function
 
     # Compute variant cost and risk
-    hx.compute_cost(representation=representation)
+    hx.compute_cost()
     if hx.variant_cost == "undefined":
         hx.variant_risk = "undefined"
     else:

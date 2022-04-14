@@ -56,7 +56,7 @@ class Variant:
             self.variant_cost = num_differences(self.init_seq, self.final_seq)
             self.variant_cost_type = "num_differences"
         elif type=="squared_difference":
-            self.variant_cost = squared_difference(self.init_seq, self.final_seq, representation=variant.representation)
+            self.variant_cost = squared_difference(self.init_seq, self.final_seq, representation=self.representation)
             self.variant_cost_type = "squared_difference"
 
         return self.variant_cost
