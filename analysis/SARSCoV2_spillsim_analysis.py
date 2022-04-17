@@ -12,13 +12,14 @@ from mgm.pipelines.spillover_simulation import analyze_variants, reanalyze_varia
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-data_dir = "spillover_simulation9"
+data_dir = "spillover_simulation_SARS2_v2"
 SPILL_SEQ_DEFLINE = 'RaTG13|QHR63300|Bat|SARS_CoV_2'
 SPILL_SEQ_PRETTY = 'RaTG13'
 WITHHELD_SPECIES = 'SARS_CoV_2'
 WITHHELD_SPECIES_PRETTY = 'SARS CoV 2'
-THRESHOLD = 0.95
+THRESHOLD = 0.99
 keep_final_seq = True
+LIM = 400  # Scatter plot limit
 ########################################################################################################################
 if THRESHOLD is None:
     suffix = ''
@@ -173,6 +174,7 @@ rankings['rank_change'] = rankings['model_rank'] - rankings['MGM_rank']
 # Save updated rankings
 rankings.to_csv('rankings_corrected_with_ranks%s.csv' % (suffix,))
 
+
 rankings1 = rankings.loc[rankings['Species'] == WITHHELD_SPECIES]
 rankings0 = rankings.loc[rankings['Species'] != WITHHELD_SPECIES]
 rankings_spill_seq = rankings.loc[rankings['defline'] == SPILL_SEQ_DEFLINE]
@@ -186,9 +188,9 @@ plt.ylabel('Risk ranking by MGM-d')
 plt.legend(bbox_to_anchor=(1.04,1), loc="upper left", fontsize='small')
 plt.title('Comparison of ranking methods')
 m = len(rankings)+1
-plt.xlim(1,n_ranked)
-plt.ylim(1,n_ranked)
-plt.plot([1, n_ranked], [1, n_ranked], color = 'black', linewidth = 0.5, linestyle='--')
+plt.xlim(1,LIM)
+plt.ylim(1,LIM)
+plt.plot([1, LIM], [1, LIM], color = 'black', linewidth = 0.5, linestyle='--')
 plt.savefig('rank_scatter%s.jpg' % (suffix,), dpi=400, bbox_inches="tight")
 
 # As above, ranking change in 1D

@@ -6,7 +6,7 @@ This code is designed and tested for data in the format delivered by load_kuzmin
 
 from mgm.algorithms.mutations import variant_search, variants
 from mgm.analysis.risk_assessment import risk_of_variant
-from mgm.common.cost_functions import num_differences
+from mgm.common.cost_functions import num_differences, similarity
 from mgm.common.sequence import Sequence
 from mgm.data.kuzmin_data import load_kuzmin_data, species_aware_CV, LOOCV, all_species_index_sets
 from mgm.common.utils import set_data_directory
@@ -164,15 +164,17 @@ def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_
 def diff_from_nearest(seq, reference_seqs):
     """
     Given an input Sequence, find the distance to the closest member of a list of reference Sequences. Difference
-    is number of amino acid differences.
+    is edit distance (number of amino acid differences) and Blossom similarity.
     """
-    min_diff = None
+    edit_dist_nearest, sim_nearest = None, None
     for ref in reference_seqs:
         diff = num_differences(seq, ref)
-        if min_diff is None or diff < min_diff:
-            min_diff = diff
-
-    return min_diff
+        sim = similarity(seq, ref)
+        if edit_dist_nearest is None or diff < edit_dist_nearest:
+            edit_dist_nearest = diff
+        if sim_nearest is None or sim < sim_nearest:
+            sim_nearest = sim
+    return edit_dist_nearest, sim_nearest
 
 def analyze_variants(variants, filename="rankings.csv"):
     # Recapitulate withheld group
@@ -188,11 +190,12 @@ def analyze_variants(variants, filename="rankings.csv"):
             final_pred = variant.get_final_pred()
         else:
             final_pred = variant.init_pred
-        row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type, num_differences(variant.init_seq, variant.final_seq), diff_from_nearest(variant.init_seq, withheld_seqs),
+        edit_dist_nearest, sim_nearest = diff_from_nearest(variant.init_seq, withheld_seqs)
+        row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type, num_differences(variant.init_seq, variant.final_seq), edit_dist_nearest, sim_nearest,
                variant.init_seq.get_species(), variant.init_seq.y, variant.init_pred, final_pred, variant.confidence_threshold, variant.init_seq.get_defline())
         rows.append(row)
 
-    cols = ['Risk score', 'Risk score type', 'Cost', 'Cost type', 'Num Differences', 'Diff to Closest Positive', 'Species', 'Initial label', 'Initial pred',
+    cols = ['Risk score', 'Risk score type', 'Cost', 'Cost type', 'Num Differences', 'Edit Distance to Closest Positive', 'Blossom Similarity to Closest Positive', 'Species', 'Initial label', 'Initial pred',
             'Final Pred', 'Threshold', 'defline']
 
     output_df = pd.DataFrame(rows, columns=cols)
