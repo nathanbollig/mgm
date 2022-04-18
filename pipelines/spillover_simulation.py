@@ -190,7 +190,7 @@ def analyze_variants(variants, filename="rankings.csv"):
             final_pred = variant.get_final_pred()
         else:
             final_pred = variant.init_pred
-        edit_dist_nearest, sim_nearest = diff_from_nearest(variant.init_seq, withheld_seqs)
+        edit_dist_nearest, sim_nearest = diff_from_nearest(variant.init_seq, withheld_seqs)  # TODO: pass all positive seqs in dataset, rather than just withheld positives (?)
         row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type, num_differences(variant.init_seq, variant.final_seq), edit_dist_nearest, sim_nearest,
                variant.init_seq.get_species(), variant.init_seq.y, variant.init_pred, final_pred, variant.confidence_threshold, variant.init_seq.get_defline())
         rows.append(row)

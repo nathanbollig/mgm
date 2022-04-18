@@ -2,6 +2,7 @@ import pickle
 
 import pandas as pd
 
+from mgm.analysis.rankings_analysis import make_ranking_plots
 from mgm.analysis.trajectory_analysis import conf_vs_change_number
 from mgm.common.sequence import unaligned_idx_to_mult_align_idx
 from mgm.common.utils import set_data_directory
@@ -12,12 +13,20 @@ from mgm.pipelines.spillover_simulation import analyze_variants, reanalyze_varia
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-data_dir = "spillover_simulation_SARS1"
+data_dir = "spillover_simulation_SARS1_v2"
 WITHHELD_SPECIES = 'Severe_acute_respiratory_syndrome_related_coronavirus'
 WITHHELD_SPECIES_PRETTY = 'SARS1'
-THRESHOLD = 0.39
-keep_final_seq = False
-########################################################################################################################
+THRESHOLD = 0.95
+keep_final_seq = True
+LIM = None  # Scatter plot limit
+
+params = {}
+params['data_dir'] = data_dir
+params['WITHHELD_SPECIES'] = WITHHELD_SPECIES
+params['WITHHELD_SPECIES_PRETTY'] = WITHHELD_SPECIES_PRETTY
+params['THRESHOLD'] = THRESHOLD
+params['keep_final_seq'] = keep_final_seq
+params['LIM'] = LIM
 
 if THRESHOLD is None:
     suffix = ''
@@ -29,6 +38,10 @@ rankings_path = 'rankings%s.csv' % (suffix,)
 
 if keep_final_seq == True:
     suffix = suffix + "_keepfinal"
+
+params['suffix'] = suffix
+params['rankings_path'] = rankings_path
+########################################################################################################################
 
 # Set directory to where results are
 set_data_directory(data_dir)
@@ -108,64 +121,9 @@ plt.legend(fontsize='small')
 plt.title('Mutations suggested in %s' % (WITHHELD_SPECIES_PRETTY,))
 plt.savefig('distribution%s.jpg' % (suffix,), dpi=400)
 
-
-# Comparison of rankings by MGM vs init model pred - 2D
-# Read in rankings
-rankings = pd.read_csv(rankings_path)
-# Compute number of sequences that have a cost, i.e. are "ranked"
-n_ranked = len(rankings.loc[rankings['Cost'] != 'undefined'])
-# Sort by cost, putting undefined at the bottom
-rankings['Cost'] = pd.to_numeric(rankings['Cost'], errors='coerce')
-rankings.sort_values(by=['Cost'], inplace=True)
-rankings['Cost'] = rankings['Cost'].fillna("undefined")
-# Assign rank column as sorted by cost
-rankings['MGM_rank'] = range(1, len(rankings) + 1)
-rankings['MGM_rank'].loc[rankings['Cost'] == 'undefined'] = len(rankings) + 1
-# Sort by initial pred and assign rank column as sorted by initial pred
-rankings = rankings.sort_values(by=['Initial pred'], ascending=False)
-rankings['model_rank'] = range(1, len(rankings) + 1)
-# Compute and assign rank change
-rankings['rank_change'] = rankings['model_rank'] - rankings['MGM_rank']
-# Save updated rankings
-rankings.to_csv('rankings_corrected_with_ranks%s.csv' % (suffix,))
-
-rankings1 = rankings.loc[rankings['Species'] == WITHHELD_SPECIES]
-rankings0 = rankings.loc[rankings['Species'] != WITHHELD_SPECIES]
-#rankings_spill_seq = rankings.loc[rankings['defline'] == SPILL_SEQ_DEFLINE]
-
-plt.clf()
-plt.scatter(rankings1['model_rank'], rankings1['MGM_rank'], s=50, facecolors='none', edgecolors='r', label=WITHHELD_SPECIES_PRETTY)
-plt.scatter(rankings0['model_rank'], rankings0['MGM_rank'], s=50, facecolors='none', edgecolors='b', label='Other groups', alpha=0.7)
-#plt.scatter(rankings_spill_seq['model_rank'], rankings_spill_seq['MGM_rank'], s=15, facecolors='black', edgecolors='black', marker="*", label=SPILL_SEQ_PRETTY)
-plt.xlabel('Risk ranking by initial model score')
-plt.ylabel('Risk ranking by MGM-d')
-plt.legend(bbox_to_anchor=(1.04,1), loc="upper left", fontsize='small')
-plt.title('Comparison of ranking methods')
-plt.xlim(1,n_ranked)
-plt.ylim(1,n_ranked)
-plt.plot([1, n_ranked], [1, n_ranked], color = 'black', linewidth = 0.5, linestyle='--')
-plt.savefig('rank_scatter%s.jpg' % (suffix,), dpi=400, bbox_inches="tight")
-
-# As above, ranking change in 1D
-plt.clf()
-change1 = rankings1['rank_change'].to_list()
-change0 = rankings0['rank_change'].to_list()
-lower_limit = min(change0 + change1)
-upper_limit = max(change0 + change1)
-bins = np.linspace(lower_limit, upper_limit, 50)
-
-plt.axvline(x=0, linestyle="--", color="black")
-plt.hist(change0, bins, density=False, facecolor='b', edgecolor='k', alpha=0.8, label='Other groups')
-plt.hist(change1, bins, density=False, facecolor='r', edgecolor='k', alpha=0.8, label=WITHHELD_SPECIES_PRETTY)
-#plt.scatter(x=spill_seq_profit, y = 1, marker="*", label="RaTG13", linestyle="--", color="black")
-
-plt.xlabel('Relative increase in ranking via MGM')
-plt.ylabel('Count')
-handles, labels = plt.gca().get_legend_handles_labels()
-order = [1,0]
-plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order])
-plt.title('Ranking change relative to ranking by model score')
-plt.savefig('rank_change_distribution%s.jpg' % (suffix,), dpi=400)
+make_ranking_plots(baseline='Initial pred', **params)
+make_ranking_plots(baseline='Edit Distance to Closest Positive', **params)
+make_ranking_plots(baseline='Blossom Similarity to Closest Positive', **params)
 
 
 
