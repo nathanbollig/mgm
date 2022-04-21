@@ -17,7 +17,7 @@ import pandas as pd
 
 def spillover_experiment(species_to_withhold = 'SARS_CoV_2', representation='one-hot', validate_model=False, model_initializer = make_LSTM, desired_precision=0.9, confidence_threshold=None, fixed_iterations=250):
     # Load data and get variants
-    variants = spillover_get_variants(species_to_withhold = species_to_withhold, representation=representation, validate_model=validate_model,
+    variants, seqs = spillover_get_variants(species_to_withhold = species_to_withhold, representation=representation, validate_model=validate_model,
                                       model_initializer = model_initializer, desired_precision=desired_precision, confidence_threshold=confidence_threshold,
                                       fixed_iterations=fixed_iterations)
 
@@ -25,15 +25,22 @@ def spillover_experiment(species_to_withhold = 'SARS_CoV_2', representation='one
     with open("variants.pkl", 'wb') as file:
         pickle.dump(variants, file, protocol=pickle.HIGHEST_PROTOCOL)
 
+    # Extract non-withheld positive sequences for baseline computations
+    non_withheld_pos_seqs = select_non_withheld_pos(seqs, species_withheld= species_to_withhold)
+
+    # Save non-withheld pos seqs
+    with open("non_withheld_pos_seqs.pkl", 'wb') as file:
+        pickle.dump(non_withheld_pos_seqs, file, protocol=pickle.HIGHEST_PROTOCOL)
+
     # Run analysis of variants (saves files)
-    analyze_variants(variants)
+    analyze_variants(variants, non_withheld_pos_seqs)
 
 def spillover_get_variants(representation, fixed_iterations, species_to_withhold = 'SARS_CoV_2', validate_model=False, model_initializer = make_LSTM, desired_precision=6/7.0, confidence_threshold=None):
     """
     Withhold a designated species from the training dataset.
     Iterate on all negative species => select confidence threshold using internal LOOCV, train a model, use model to guide mgm on the negative group
     Also one iteration with positive sequences included
-    Pool MGM results and return a list of variants
+    Pool MGM results and return a list of variants + all Sequence objects returned from data load.
     """
 
     # Load Data
@@ -120,7 +127,7 @@ def spillover_get_variants(representation, fixed_iterations, species_to_withhold
     # Tests for correctness
     assert(len(variants) == size_non_human_groups + len(y_withheld))
 
-    return variants
+    return variants, seqs
 
 def external_CV_iteration(model_initializer, X_train, y_train, species_train, X_val, y_val, species_val, deflines_val, desired_precision, confidence_threshold, fixed_iterations):
     """
@@ -176,12 +183,19 @@ def diff_from_nearest(seq, reference_seqs):
             sim_nearest = sim
     return edit_dist_nearest, sim_nearest
 
-def analyze_variants(variants, filename="rankings.csv"):
-    # Recapitulate withheld group
-    withheld_seqs = []
-    for variant in variants:
-        if variant.init_seq.y == 1:
-            withheld_seqs.append(variant.init_seq)
+def select_non_withheld_pos(sequences, species_withheld = 'SARS_CoV_2'):
+    non_withheld_pos_seqs = []
+    for seq in sequences:
+        if seq.y == 1 and seq.get_species() != species_withheld:
+            non_withheld_pos_seqs.append(seq)
+    return non_withheld_pos_seqs
+
+def analyze_variants(variants, non_withheld_pos_seqs, filename="rankings_%s_keepfinal.csv"):
+    # # Recapitulate withheld group
+    # withheld_seqs = []
+    # for variant in variants:
+    #     if variant.init_seq.y == 1:
+    #         withheld_seqs.append(variant.init_seq)
 
     # Rank by risk score
     rows = []
@@ -190,7 +204,7 @@ def analyze_variants(variants, filename="rankings.csv"):
             final_pred = variant.get_final_pred()
         else:
             final_pred = variant.init_pred
-        edit_dist_nearest, sim_nearest = diff_from_nearest(variant.init_seq, withheld_seqs)  # TODO: pass all positive seqs in dataset, rather than just withheld positives (?)
+        edit_dist_nearest, sim_nearest = diff_from_nearest(variant.init_seq, non_withheld_pos_seqs)
         row = (variant.variant_risk, variant.variant_risk_type, variant.variant_cost, variant.variant_cost_type, num_differences(variant.init_seq, variant.final_seq), edit_dist_nearest, sim_nearest,
                variant.init_seq.get_species(), variant.init_seq.y, variant.init_pred, final_pred, variant.confidence_threshold, variant.init_seq.get_defline())
         rows.append(row)
@@ -202,22 +216,26 @@ def analyze_variants(variants, filename="rankings.csv"):
     output_df['Risk score'] = pd.to_numeric(output_df['Risk score'], errors='coerce')
     output_df = output_df.sort_values(by=['Risk score'], ascending=False)
     output_df['Risk score'] = output_df['Risk score'].fillna("undefined")
+
+    if filename == "rankings_%s_keepfinal.csv":
+        filename = filename % (str(int(variants[0].confidence_threshold * 100)),)
     output_df.to_csv(filename, index=False)
 
+def truncate_mutation_trajectory(substitution_data, confidence_threshold):
+    for i, sub_dict in enumerate(substitution_data):
+        if sub_dict['pred_proba'] > confidence_threshold:
+            substitution_data_truncated = substitution_data[:i+1]
+            return substitution_data_truncated
+    return substitution_data
 
-def reanalyze_variants(variants, THRESHOLD, rankings_path, keep_final_seq=False):
-    def truncate_mutation_trajectory(substitution_data, confidence_threshold):
-        for i, sub_dict in enumerate(substitution_data):
-            if sub_dict['pred_proba'] > confidence_threshold:
-                substitution_data_truncated = substitution_data[:i+1]
-                return substitution_data_truncated
-        return substitution_data
+def analyze_variants_at_threshold(variants, non_withheld_pos_seqs, THRESHOLD, rankings_path, keep_final_seq=False):
 
     for variant in variants:
-        variant.confidence_threshold = THRESHOLD
-        variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
-        if not keep_final_seq:
-            variant.final_seq = variant.replay_trajectory()
-        variant.compute_cost()
+        if THRESHOLD < variant.confidence_threshold:
+            variant.confidence_threshold = THRESHOLD
+            variant.substitution_data = truncate_mutation_trajectory(variant.substitution_data, variant.confidence_threshold)
+            if keep_final_seq == False:
+                variant.final_seq = variant.replay_trajectory()
+            variant.compute_cost()
 
-    analyze_variants(variants, filename=rankings_path)
+    analyze_variants(variants, non_withheld_pos_seqs, filename=rankings_path)

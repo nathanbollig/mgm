@@ -60,7 +60,7 @@ def make_ranking_plots(rankings_path, WITHHELD_SPECIES, WITHHELD_SPECIES_PRETTY,
 
     plt.clf()
     plt.scatter(rankings1[baseline_rank_col], rankings1['MGM_rank'], s=50, facecolors='none', edgecolors='r', label=WITHHELD_SPECIES_PRETTY)
-    plt.scatter(rankings0[baseline_rank_col], rankings0['MGM_rank'], s=50, facecolors='none', edgecolors='b', label='Other groups')
+    plt.scatter(rankings0[baseline_rank_col], rankings0['MGM_rank'], s=50, facecolors='none', edgecolors='b', label='Negatives')
     if SPILL_SEQ_PRETTY is not None:
         plt.scatter(rankings_spill_seq[baseline_rank_col], rankings_spill_seq['MGM_rank'], s=15, facecolors='black', edgecolors='black', marker="*", label=SPILL_SEQ_PRETTY)
     plt.xlabel('Risk ranking by %s' % (baseline,))

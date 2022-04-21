@@ -119,19 +119,23 @@ def get_data(list_of_sequences, label_type, representation_type="one-hot"):
     list_of_species = []
     list_of_seq = []
     for entry in list_of_sequences:
+        if label_type == "by_species":
+            label = entry.target
+            list_of_targets.append(label)
+        if label_type == "by_host":
+            label = int(entry.host_species == 'Human')
+            list_of_targets.append(label)
+
         legacy_encoding = entry.encoded
         if representation_type == "legacy":
             list_of_encoded_sequences.append(legacy_encoding)
         else:
             legacy_one_hot = np.array(legacy_encoding).reshape((N_POS, N_CHAR))
-            seq = Sequence(legacy_one_hot, n_characters=25, aa_vocab=aa_vocab)
+            seq = Sequence(legacy_one_hot, n_characters=25, aa_vocab=aa_vocab, y=label)
+            seq.set_species(entry.virus_species)
             list_of_encoded_sequences.append(seq.get_encoding(representation_type))
             list_of_seq.append(seq)
-        if label_type == "by_species":
-            list_of_targets.append(entry.target)
-        if label_type == "by_host":
-            label = int(entry.host_species == 'Human')
-            list_of_targets.append(label)
+
         list_of_species.append(entry.virus_species)
 
     return list_of_encoded_sequences, list_of_targets, list_of_species, list_of_seq
@@ -213,7 +217,7 @@ def load_kuzmin_data(label_type="by_species", representation_type=None):
     species = np.array(species)
 
     # Randomize ordering
-    X, y, species, deflines, sequences = shuffle(X, y, species, deflines, sequences)
+    X, y, species, deflines, sequences, seqs = shuffle(X, y, species, deflines, sequences, seqs)
 
     # Get index sets
     sp = all_species_index_sets(species)

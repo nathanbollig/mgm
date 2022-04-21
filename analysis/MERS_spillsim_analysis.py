@@ -1,3 +1,4 @@
+import os
 import pickle
 
 import pandas as pd
@@ -8,7 +9,9 @@ from mgm.common.sequence import unaligned_idx_to_mult_align_idx
 from mgm.common.utils import set_data_directory
 import matplotlib.pyplot as plt
 import numpy as np
-from mgm.pipelines.spillover_simulation import analyze_variants, reanalyze_variants
+
+from mgm.data.kuzmin_data import load_kuzmin_data
+from mgm.pipelines.spillover_simulation import analyze_variants, analyze_variants_at_threshold, select_non_withheld_pos
 
 ########################################################################################################################
 # Set analysis parameters
@@ -34,27 +37,43 @@ else:
     assert (THRESHOLD <= 1)
     suffix = '_' + str(int(THRESHOLD * 100))
 
-rankings_path = 'rankings%s.csv' % (suffix,)
-
 if keep_final_seq == True:
     suffix = suffix + "_keepfinal"
+
+rankings_path = 'rankings%s.csv' % (suffix,)
 
 params['suffix'] = suffix
 params['rankings_path'] = rankings_path
 ########################################################################################################################
 
 # Set directory to where results are
-set_data_directory(data_dir)
+set_data_directory(params['data_dir'])
 
 # Load variants
 with open(r"variants.pkl", "rb") as f:
     variants = pickle.load(f)
 
-# Make confidence trajectories
-conf_trajectory(variants)
+# Legacy compatibility: Check if non-withheld positive sequences are available
+if not os.path.isfile("non_withheld_pos_seqs.pkl"):
+    _, _, _, _, _, _, _, seqs = load_kuzmin_data()
+    non_withheld_pos_seqs = select_non_withheld_pos(seqs, species_withheld=params['WITHHELD_SPECIES'])
+    with open("non_withheld_pos_seqs.pkl", 'wb') as file:
+        pickle.dump(non_withheld_pos_seqs, file, protocol=pickle.HIGHEST_PROTOCOL)
+else:
+    with open(r"non_withheld_pos_seqs.pkl", "rb") as f:
+        non_withheld_pos_seqs = pickle.load(f)
 
-if THRESHOLD is not None:
-    reanalyze_variants(variants, THRESHOLD, rankings_path, keep_final_seq=keep_final_seq)
+# Re-analyze at original threshold if analysis code was updated since experiment
+if not os.path.isfile("rankings_%s_keepfinal.csv" % (str(int(variants[0].confidence_threshold * 100)),)):
+    analyze_variants(variants, non_withheld_pos_seqs, filename= "rankings_%s_keepfinal.csv" % (str(int(variants[0].confidence_threshold * 100)),))
+
+# Analyze at new threshold
+if THRESHOLD is not None and not os.path.isfile(rankings_path):
+    analyze_variants_at_threshold(variants, non_withheld_pos_seqs, THRESHOLD, rankings_path, keep_final_seq=keep_final_seq)
+
+# Make confidence trajectories
+conf_trajectory(variants, x_col='change_number', sigma=2)
+conf_trajectory(variants, x_col='cost', sigma=None)
 
 # # Pull out thresholds and auc for each method
 # thresh_avg_species = []
