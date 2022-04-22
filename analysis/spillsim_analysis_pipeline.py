@@ -16,24 +16,24 @@ from mgm.pipelines.spillover_simulation import analyze_variants, analyze_variant
 ########################################################################################################################
 # Set analysis parameters
 ########################################################################################################################
-data_dir = "spillover_simulation_SARS2_v2"
-SPILL_SEQ_DEFLINE = 'RaTG13|QHR63300|Bat|SARS_CoV_2'
-SPILL_SEQ_PRETTY = 'RaTG13'
-WITHHELD_SPECIES = 'SARS_CoV_2'
-WITHHELD_SPECIES_PRETTY = 'SARS CoV 2'
-THRESHOLD = 0.95
-keep_final_seq = False
-LIM = None  # Scatter plot limit
-
-params = {}
-params['data_dir'] = data_dir
-params['SPILL_SEQ_DEFLINE'] = SPILL_SEQ_DEFLINE
-params['SPILL_SEQ_PRETTY'] = SPILL_SEQ_PRETTY
-params['WITHHELD_SPECIES'] = WITHHELD_SPECIES
-params['WITHHELD_SPECIES_PRETTY'] = WITHHELD_SPECIES_PRETTY
-params['THRESHOLD'] = THRESHOLD
-params['keep_final_seq'] = keep_final_seq
-params['LIM'] = LIM
+# data_dir = "spillover_simulation_SARS2_v2"
+# SPILL_SEQ_DEFLINE = 'RaTG13|QHR63300|Bat|SARS_CoV_2'
+# SPILL_SEQ_PRETTY = 'RaTG13'
+# WITHHELD_SPECIES = 'SARS_CoV_2'
+# WITHHELD_SPECIES_PRETTY = 'SARS CoV 2'
+# THRESHOLD = 0.95
+# keep_final_seq = False
+# LIM = None  # Scatter plot limit
+#
+# params = {}
+# params['data_dir'] = data_dir
+# params['SPILL_SEQ_DEFLINE'] = SPILL_SEQ_DEFLINE
+# params['SPILL_SEQ_PRETTY'] = SPILL_SEQ_PRETTY
+# params['WITHHELD_SPECIES'] = WITHHELD_SPECIES
+# params['WITHHELD_SPECIES_PRETTY'] = WITHHELD_SPECIES_PRETTY
+# params['THRESHOLD'] = THRESHOLD
+# params['keep_final_seq'] = keep_final_seq
+# params['LIM'] = LIM
 ########################################################################################################################
 
 def spillsim_analysis_pipeline(**params):
@@ -90,7 +90,7 @@ def spillsim_analysis_pipeline(**params):
                 for i, sub_dict in enumerate(variant.substitution_data):
                     if sub_dict['pred_proba'] <= confidence_threshold:
                         index = sub_dict['pos_to_change']
-                        if variant.init_seq.defline == params['SPILL_SEQ_DEFLINE']:
+                        if variant.init_seq.defline == params.get('SPILL_SEQ_DEFLINE'):
                             spill_seq_positions.add(index)
                         else:
                             position_set.add(index)
@@ -118,7 +118,7 @@ def spillsim_analysis_pipeline(**params):
         # patches[i].set_edgecolor('black')
         patch = patches[bin_idx]
         x_center = patch.get_x() + 0.5 * patch.get_width()
-        plt.scatter(x=x_center, y=3, marker="*", linestyle="--", color="black", label="%s at conf=.75" % (params['SPILL_SEQ_PRETTY'],) if i==0 else "")
+        plt.scatter(x=x_center, y=3, marker="*", linestyle="--", color="black", label="%s at conf=.75" % (params.get('SPILL_SEQ_PRETTY'),) if i==0 else "")
 
     plt.legend(fontsize='small')
     plt.title('Mutations suggested in %s' % (params['WITHHELD_SPECIES_PRETTY'],))
@@ -128,7 +128,7 @@ def spillsim_analysis_pipeline(**params):
     def SARSCoV2_endpoints(variants):
         # First get representative variant
         for i,variant in enumerate(variants):
-            if variant.init_seq.defline == params['SPILL_SEQ_DEFLINE']:
+            if variant.init_seq.defline == params.get('SPILL_SEQ_DEFLINE'):
                 idx = i
         # Then use it to get desired cutoffs
         """
