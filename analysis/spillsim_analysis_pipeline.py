@@ -21,7 +21,7 @@ from mgm.pipelines.spillover_simulation import analyze_variants, analyze_variant
 # SPILL_SEQ_PRETTY = 'RaTG13'
 # WITHHELD_SPECIES = 'SARS_CoV_2'
 # WITHHELD_SPECIES_PRETTY = 'SARS CoV 2'
-# THRESHOLD = 0.95
+# THRESHOLD = 0.99
 # keep_final_seq = False
 # LIM = None  # Scatter plot limit
 #

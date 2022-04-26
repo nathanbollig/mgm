@@ -11,11 +11,11 @@ def add_rank_values(rankings, baseline, suffix):
     n_ranked = len(rankings.loc[rankings['Cost'] != 'undefined'])
     # Sort by cost, putting undefined at the bottom
     rankings['Cost'] = pd.to_numeric(rankings['Cost'], errors='coerce')
-    rankings.sort_values(by=['Cost'], inplace=True)
+    rankings.sort_values(by=['Cost', 'Final Pred'], ascending=[True, False], inplace=True)
     rankings['Cost'] = rankings['Cost'].fillna("undefined")
-    # Assign rank column as sorted by cost
+    # Assign rank column as sorted by cost then final pred
     rankings['MGM_rank'] = range(1, len(rankings) + 1)
-    rankings['MGM_rank'].loc[rankings['Cost'] == 'undefined'] = len(rankings) + 1
+    #rankings['MGM_rank'].loc[rankings['Cost'] == 'undefined'] = len(rankings) + 1  # Assigns all undef cost to last rank
     # Sort by baseline and assign rank column as sorted by baseline
     if baseline == 'Initial pred':
         ascending = False
