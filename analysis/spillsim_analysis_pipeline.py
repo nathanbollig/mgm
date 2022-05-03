@@ -37,26 +37,26 @@ from mgm.pipelines.spillover_simulation import analyze_variants, analyze_variant
 ########################################################################################################################
 
 def spillsim_analysis_pipeline(**params):
-    # Define suffix and ranking file path
-    if params['THRESHOLD'] is None:
-        suffix = ''
-    else:
-        assert (params['THRESHOLD'] <= 1)
-        suffix = '_' + str(int(params['THRESHOLD'] * 100))
-
-    if params['keep_final_seq'] == True:
-        suffix = suffix + "_keepfinal"
-
-    rankings_path = 'rankings%s.csv' % (suffix,)
-    params['rankings_path'] = rankings_path
-    params['suffix'] = suffix
-
     # Set directory to where results are
     set_data_directory(params['data_dir'])
 
     # Load variants
     with open(r"variants.pkl", "rb") as f:
         variants = pickle.load(f)
+
+    # Define suffix and ranking file path
+    if params['THRESHOLD'] is None:
+        suffix = "_%s_keepfinal" % (str(int(variants[0].confidence_threshold * 100)),)
+    else:
+        assert (params['THRESHOLD'] <= 1)
+        suffix = '_' + str(int(params['THRESHOLD'] * 100))
+
+    if params['THRESHOLD'] is not None and params['keep_final_seq'] == True:
+        suffix = suffix + "_keepfinal"
+
+    rankings_path = 'rankings%s.csv' % (suffix,)
+    params['rankings_path'] = rankings_path
+    params['suffix'] = suffix
 
     # Legacy compatibility: Check if non-withheld positive sequences are available
     if not os.path.isfile("non_withheld_pos_seqs.pkl"):
