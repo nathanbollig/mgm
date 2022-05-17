@@ -1,6 +1,7 @@
 import os
 import pickle
 import random
+import numpy as np
 
 from sklearn.metrics import roc_auc_score
 
@@ -11,7 +12,7 @@ from mgm.common.utils import get_full_path
 
 from sklearn.model_selection import LeaveOneOut
 
-set_data_directory('NB_Ze_comparison')
+set_data_directory('NB_Ze_comparison_2')
 
 def read_pickle(filename):
   location_full = get_full_path("data", "Ze_data", filename)
@@ -22,19 +23,26 @@ def write_pickle(filename, data):
   with open(os.path.join(os.getcwd(), filename), 'wb') as f:
     pickle.dump(data,f)
 
+output = ''
+
 # Nathan's one-hot with package data load routine
 model_initializer = make_CNN
 # X, y, species, deflines, sequences, sp, human_virus_species_list, seqs = load_kuzmin_data(representation_type='one-hot')
 # thresh, data = LOOCV(model_initializer, X, y, species, epochs=10, output_string="NB_oh")
 
 # Nathan's one-hot with Ze's data splits
-X = read_pickle('X.pkl')
+X = read_pickle('X.pkl').reshape((-1, 2396, 25))
 y = read_pickle('y.pkl')
 species = read_pickle('species.pkl')
 deflines = read_pickle('deflines.pkl')
 sp = read_pickle('sp.pkl')
 human_virus_species_list = read_pickle('human_virus_species_list.pkl')
-thresh, data = LOOCV(model_initializer, X, y, species, epochs=10, output_string="NB_oh_Ze_data")
+thresh, data = LOOCV(model_initializer, X, y, species, epochs=10, output_string="NB_oh_Ze_data", batchsize=64)
+auc_61 = data['auc_based_on_avg_within_species']
+auc_all = data['auc_based_on_all_seq']
+output += 'NB - One Hot AUROC: %.3f, %.3f (grouped, all)\n' % (auc_61, auc_all)
+with open("results.txt", "w") as text_file:
+  text_file.write(output)
 
 # Nathan's kidera with package data load routine
 # X_kidera, _, _, _, _, _, _, _ = load_kuzmin_data(representation_type='kidera')
@@ -42,7 +50,12 @@ thresh, data = LOOCV(model_initializer, X, y, species, epochs=10, output_string=
 
 # Nathan's Kidera with Ze's data splits
 X_kidera =  read_pickle('chemical_physical_representation_map_10_proterties.pkl')
-thresh, data = LOOCV(model_initializer, X_kidera, y, species, epochs=10, output_string="NB_kidera_Ze_data")
+thresh, data = LOOCV(model_initializer, X_kidera, y, species, epochs=10, output_string="NB_kidera_Ze_data", batchsize=64)
+auc_61 = data['auc_based_on_avg_within_species']
+auc_all = data['auc_based_on_all_seq']
+output += 'NB - Kidera AUROC: %.3f, %.3f (grouped, all)\n' % (auc_61, auc_all)
+with open("results.txt", "w") as text_file:
+  text_file.write(output)
 
 ########################################################################################################################
 # Ze's Code
@@ -189,18 +202,14 @@ classifiers = {"CNN": None}
 Y_proba, Y_proba_61, Y_targets, Y_targets_61 = saveLOOCVResult_61(X,y,species,sp,10,64,2396, classifiers, all_models, human_virus_species_list, 'LOOCV_ALL_onehot_10_64.pkl')
 auc_61 = roc_auc_score(Y_targets_61, Y_proba_61['CNN'])
 auc_all = roc_auc_score(Y_targets, Y_proba['CNN'])
-output = ''
-output += 'Ze - One Hot AUROC: %.3f (grouped)\n' % (auc_61,)
-output += 'Ze - One Hot AUROC: %.3f (all)\n' % (auc_all,)
-with open("Ze_oh_results.txt", "w") as text_file:
+output += 'Ze - One Hot AUROC: %.3f, %.3f (grouped, all)\n' % (auc_61, auc_all)
+with open("results.txt", "w") as text_file:
   text_file.write(output)
 
 
 Y_proba, Y_proba_61, Y_targets, Y_targets_61 = saveLOOCVResult_61(X_kidera,y,species,sp,10,64,2396,classifiers,all_models,human_virus_species_list,'LOOCV_ALL_kidera_10_64.pkl')
 auc_61 = roc_auc_score(Y_targets_61, Y_proba_61['CNN'])
 auc_all = roc_auc_score(Y_targets, Y_proba['CNN'])
-output = ''
-output += 'Ze - Kidera AUROC: %.3f (grouped)\n' % (auc_61,)
-output += 'Ze - Kidera AUROC: %.3f (all)\n' % (auc_all,)
-with open("Ze_kidera_results.txt", "w") as text_file:
+output += 'Ze - Kidera AUROC: %.3f, %.3f (grouped, all)\n' % (auc_61, auc_all)
+with open("results.txt", "w") as text_file:
   text_file.write(output)

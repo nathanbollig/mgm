@@ -248,7 +248,7 @@ def all_species_index_sets(species):
 
     return species_index
 
-def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desired_precision=None, threshold_only=False, avg_within_species=True):
+def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desired_precision=None, threshold_only=False, avg_within_species=True, batchsize=32):
     """
     Takes in a model initializer and kuzmin data, applies leave-one-out CV (wrt viral species) to determine model performance and threshold for desired precision.
 
@@ -330,7 +330,7 @@ def LOOCV(model_initializer, X, y, species, epochs=1, output_string="test", desi
 
         # Train model
         model = model_initializer(X_train, y_train, N_POS=X.shape[1])
-        model.fit(X_train, y_train, epochs=epochs)
+        model.fit(X_train, y_train, epochs=epochs, batch_size=batchsize)
 
         # Apply model to test set
         y_proba = model.predict(X_test)
