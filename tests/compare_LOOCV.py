@@ -12,7 +12,7 @@ from mgm.common.utils import get_full_path
 
 from sklearn.model_selection import LeaveOneOut
 
-set_data_directory('NB_Ze_comparison_2')
+set_data_directory('NB_Ze_comparison_5')
 
 def read_pickle(filename):
   location_full = get_full_path("data", "Ze_data", filename)

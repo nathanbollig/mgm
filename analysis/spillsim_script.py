@@ -7,7 +7,7 @@ from mgm.analysis.spillsim_analysis_pipeline import spillsim_analysis_pipeline
 # SARS CoV 2
 ########################################################################################################################
 sars2_params = {}
-sars2_params['data_dir'] = "spillover_simulation_SARS2_kidera_v2"
+sars2_params['data_dir'] = "spillover_simulation_SARS2_v2"
 sars2_params['SPILL_SEQ_DEFLINE'] = 'RaTG13|QHR63300|Bat|SARS_CoV_2'
 sars2_params['SPILL_SEQ_PRETTY'] = 'RaTG13'
 sars2_params['WITHHELD_SPECIES'] = 'SARS_CoV_2'
